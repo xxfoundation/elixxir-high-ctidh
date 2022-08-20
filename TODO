@@ -1,0 +1,51 @@
+currently 2108 mults for l=587 bs=14 gs=10:
+* 222 = 6*37 for initial 37 multiples of kernel point
+* 95 for poly_tree1 (product tree for linear polys)
+* 134 for biquadratics
+* 139 for multiprod2 (product of quadratics) for pushing point
+* 176 = 2*88 for 2 multiprod2_selfreciprocal for pushing curve
+* 174 for multieval_precompute (reciprocal of root of product tree)
+  * try faster reciprocals; see generally https://arxiv.org/abs/0910.1926
+* 1004 = 4*251 for 4 multieval_postcompute (scaled remainder tree)
+  * automatically decide between scaled and unscaled
+* 52 = 4*(bs-1) for accumulating multieval results
+* 78 = 6*13 for 13=(587-1)/2-2*bs*gs stray points at the end
+* 34 for lth powers, final squarings, 8th powers, mults into Q and A
+
+currently 2118 mults for l=587 bs=16 gs=9:
+* 180 = 6*30 for initial 30 multiples of kernel point
+* 117 for poly_tree1 (product tree for linear polys)
+* 121 for biquadratics
+* 118 for multiprod2 (product of quadratics) for pushing point
+* 148 = 2*74 for 2 multiprod2_selfreciprocal for pushing curve
+* 170 for multieval_precompute (reciprocal of root of product tree)
+* 1140 = 4*285 for 4 multieval_postcompute (scaled remainder tree)
+* 60 = 4*(bs-1) for accumulating multieval results
+* 30 = 6*5 for 5=(587-1)/2-2*bs*gs stray points at the end
+* 34 for lth powers, final squarings, 8th powers, mults into Q and A
+
+original velusqrt was 2296 mults for l=587 bs=16 gs=9:
+* 180 = 6*30 for initial 30 multiples of kernel point
+* 117 for poly_tree1 (product tree for linear polys)
+* 171 = 19*gs for biquadratics
+* 236 = 2*118 for 2 multiprod2 (product of quadratics) for pushing point
+* 148 = 2*74 for 2 multiprod2_selfreciprocal for pushing curve
+* 170 for multieval_precompute (reciprocal of root of product tree)
+* 1140 = 4*285 for 4 multieval_postcompute (scaled remainder tree) 
+* 60 = 4*(bs-1) for accumulating multieval results
+* 30 = 6*5 for 5=(587-1)/2-2*bs*gs stray points at the end
+* 32 for lth powers
+* 12 for final squarings, 8th powers, mults into Q and A
+
+saving mults inside poly arithmetic:
+* try montgomery's karatsuba-like formulas
+* try (more) adk
+* try toom
+* unify handling of products and middle products
+* try mulders for low/high products
+* adapt all product techniques to self-reciprocal products
+
+more sophisticated cost metrics than simply counting mults in ring code:
+* merge reductions in, e.g., ab+cd (should be a big win)
+* use lazy reductions more broadly
+* use safegcd inversions (should also speed up old code somewhat)
