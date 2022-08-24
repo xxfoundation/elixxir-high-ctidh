@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
-import collections
+try:
+    import collections.abc as collections
+except:
+    import collections
 
 class memoized(object):
   def __init__(self,func):
