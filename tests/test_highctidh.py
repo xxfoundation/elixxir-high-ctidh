@@ -2,6 +2,9 @@
 
 import unittest
 from highctidh import ctidh
+from highctidh import InvalidFieldSize, InvalidPublicKey, CSIDHError
+from struct import pack
+
 import ctypes
 
 # Golang static 511 vectors
@@ -18,6 +21,7 @@ python_alice_pk_511_vector = bytes.fromhex("27e65081c09f7dee63101e78309ef0ec8923
 python_bob_sk_511_vector = bytes.fromhex("040000fdfafeff0003fffffa01fdfe02fe03fffc00ffff00fb030201fefd02fd01fe010300fd0202020300020101000100fa03ff00000000fd00ff030201020000000103000001010100")
 python_bob_pk_511_vector = bytes.fromhex("1c025d14327ca5dcad356f5f96df318c1d04434c554b7e79fc9a9a0c15e1f9b81665d5db19d5c1417dd0c7a31160db09b117817bb297faed7a068fb491627920")
 python_ss_511_vector = bytes.fromhex("5ecc8e5159cdb3bfac9281e183d9b3cbf2e289c28dee69f99b2fd840f141686fb133a3a40360a4e6056230a649be57b4e045b4c28c5558f80f57f85b43bbaf33")
+python_ss_dh_511_vector = bytes.fromhex("4da2a2c3c83c0f7faa42fe89822a83ef835e2c5f3ff1aaec8c41789fdfb2faacbcaf6dc5868b63b8c9a748c65b4acde282fde70615d8143b7bf3b0ee301f46cc")
 
 # Golang static 512 vectors
 # From https://git.xx.network/elixxir/ctidh_cgo/-/blob/master/vectors512_test.go
@@ -33,6 +37,7 @@ python_alice_pk_512_vector = bytes.fromhex("f0e3123870580f84f10e269a5150baaaf705
 python_bob_sk_512_vector = bytes.fromhex("02f90009ff06ff03fb0701010501fffafdffff070204fdfefc02fe04fc00060302fefeff01f9020002fffb0000fe02ff00f6030003ff01010105fbfffd01fffe0302fc000101fc000101")
 python_bob_pk_512_vector = bytes.fromhex("7369aaee2b543f17655fd57a78e03140b9a7fda3773651920c89fcd2aa9875dd633c3762f39fbda81961c70b0716974352ad5833564c6764ee082f17545b374d")
 python_ss_512_vector = bytes.fromhex("0d84960ea3c52ad6264a53915757d1ff8733629914577151140ae28bd28325bc31151ae3a1447e0d68aae42abcc63dae249072a8e729678ab73fd333b32a7a3d")
+python_ss_dh_512_vector = bytes.fromhex("3b2930e8ad3174aeb58041ae8efc2c34776d6d926caabd504c110539b5b1f8e3db3f15dbb005184dbdc67d21d8582c6bbc666839ab70037b9c3996b983d9e8e7")
 
 # Golang static 1024 vectors
 # From https://git.xx.network/elixxir/ctidh_cgo/-/blob/master/vectors1024_test.go
@@ -48,6 +53,7 @@ python_alice_pk_1024_vector = bytes.fromhex("f364c4b220d57528d6b64432e93fb404951
 python_bob_sk_1024_vector = bytes.fromhex("00fe00fe0101000200fe0002000100fe01000001020200000100ff040000ff000003010002000001010000fc0100010200fe00010000fe000000fe00000201ff000202ffff000000ff00ff0002ff0101fe010000000101ff0001fe00000001000000ff00ff020100000000ff00ffff0000ff00000000ffff0003ff000100ff000000")
 python_bob_pk_1024_vector = bytes.fromhex("90d51cc0f48b0ce2712bc8305e7415300bde7feef634e17211ae493ea57b56d1ad81914e85e3b8b43275e7a31c9d440f3f88ef476a31c7e504520f7b538bcbe80fd3bbbc76726c4c37c6c8f9f857618602fcbbc6899e8ac420de32e1ebb1f1178dd13f600afba82276b5f5e6b40dc421b5c3b1f342a9152009b1fae95d372303")
 python_ss_1024_vector = bytes.fromhex("b5ab3b4d9cac68c451a43d1b499e190d462788362089ca5f3e4462c1502bb06cc820fe2e46c0f9ddaf8de6fcf8c0b4238e677497ebc6f5bb622a894c3c485c9e16142579392b6af434db46b146416aab5d5bd43c3d0f1bc55755f1af93d137d20540e65fc54e7b2b564dceec6484dc2b8bdd30db2b4ea7ba86adecfcb3e7ba08")
+python_ss_dh_1024_vector = bytes.fromhex("a5bc28ad1db5c523f8f53eff8227b7c29e2c9be0c4ba7c254ded8d6fb17c6db13d4c3ddcdcb311da639ab762c6d27083dd92ea2280ebecd15391b656bcbc92c5d5db89aba48421ae050aa25c914a9b9a7403d2ce650cba9e08f38705f37b0854eb3f3bd1e6d885ad3af5b1bdf5de172528df629612dc06cebd797d5cb762d04d")
 
 # Golang static 2048 vectors
 # From https://git.xx.network/elixxir/ctidh_cgo/-/blob/master/vectors2048_test.go
@@ -63,8 +69,86 @@ python_alice_pk_2048_vector = bytes.fromhex("b2af3db1d3070879a0a0f4dbabd8c4d4e44
 python_bob_sk_2048_vector = bytes.fromhex("0000000100000000000000ff00000100ff000000000000000001fe0000010000020000010000ff00000000000100010001000000ff00000100000000ff000000000000000000ffff00000000000000000000ff00fe0000000000ff00000100000000ff000001000000ff00ff000000000000010002000000ff00000001ff0000ff00ff00000000000000000001000000000100000100000001000000ff0000ff010000000000000101ff0000000000000100000100000001000000ff00000000000000010000ff0000ff00000000000000010000000000000000000000000000ff000000010000")
 python_bob_pk_2048_vector = bytes.fromhex("135d73849ad45f7e14134b5b550e9700923cdd2f2c6eba69a6a34317120c0fcba202b171924ff08eaa6b0c7635b457e9d5e3ce2a09ea562704166d59ca57fb3ae8046a0aa330c60978add40ea6e3c386c4ca3c7b33ef02f8aec3f166c31949e93a30e665c971588faa4eb4ef07f3143fb6c0efd4f7264f1dde8fdb6d277657b2129439b7f01aba57b82efa2c2fe12a637b99a5f974ae08c3ae24a2f70eff86947dbde7f7624b082143ea3e4864afbb3d1a40af0f2e1acc09eb07922d05f99072fdd534f3d96edd09dc642cbc452345a49d0f30b515078a76696bed53c175b436c58bbcfb95893b99f252896bb3d29bb711d401a89969aeaf7b88409c76b4e834")
 python_ss_2048_vector = bytes.fromhex("f61ebdb51cff8de704e1940b702b7359f3936f632b9ac33a18d9f58f85153875e14fdc701912cc8717f0cb4c32729bc5eb9dbfc9ef207281103ae381f2ba0553686cbc43c279d1da8897e5fbab50e2a05e38ef7b012a85b856ebb3c1ebd133dc32f710dd6d67f80093b37402e5581f350f09188ac97b2ea7a14fbaa3c5db0bb38036ac2e81e34f1a04fae0fd91b90b3bca1fa3ae5b5bd37e0edebf08d806eb4cd9ab136289c9e86aba3f8839fabec86ae0cdbd794409a6b6f81b3a5c5f9f56da5e9bdeaf8f6d802be6f987ab5772f35b3855291c9ab3b1848d654841a24e014f7a112cf7591d16bf1d33b2d46e4294fca42cacb1c2eacdbe9040ab794906353f")
+python_ss_dh_2048_vector = bytes.fromhex("cff74e644b96f8dbccdc4e25b088e132d44ed56ce0c7df0d00fb03d7ad122272f0d5993275b118c7a99b7d4a743849f8183af28e31d6b99cece63d72038bdd60d0098085b5da032abfd903eaa224ed83fb7957c91d5d7410995f9200ac51fe0272a37b21ab69e285446fceaeaa5207cc74440bf92148227f00b726bfd25524a75c9488130ea4f7463672508bda624271ae745a2d475ff8529d51043902946e97b9219f4fa9d3f4b966a459969bcb5ef9e1c38de77fba7fa1406dd1f3dc71b881bf221ef73312b0bf34fbd393be04d3bc9394e0635bb38999f2b2178a3aab826e688397aea60d5db8bd5f89323fbd06dacc14002a176eb501686ff76b8600ffc2")
 
 class TestHighCTIDH(unittest.TestCase):
+
+    def test_500_field_size(self):
+        with self.assertRaises(InvalidFieldSize):
+            ctidh510 = ctidh(510)
+
+    def test_511_failed_csidh(self):
+        with self.assertRaises(CSIDHError):
+            ctidh511 = ctidh(511)
+            bob_private_key = ctidh511.private_key()
+            # This is 'p'
+            failure = pack('<' + 'Q' * 8, * [0x8dc0dc8299e3643d,
+                0xe1390dfa2bd6541a, 0xa8b398660f85a792, 0xd3d56362b3f9aa83,
+                0x2d7dfe63499164e6, 0x5a16841d76e44621, 0xfe455868af1f2625,
+                0x32da4747ba07c4df ])
+            alice_public_key = ctidh511.public_key_from_bytes(failure)
+            bob_public_key = ctidh511.public_key_from_bytes(failure)
+            base = ctidh511.public_key()
+            ctidh511.csidh(alice_public_key, bob_public_key, bob_private_key)
+
+    def test_511_invalid_public_key_two(self):
+        ctidh511 = ctidh(511)
+        base = ctidh511.public_key()
+        # This is '2'
+        failure = pack('<' + 'Q' * 8, * [8536400358637704601, 3730515660038518518,
+            7564934682790818883, 13378538787190036187, 4112930085568384763,
+            8871764544990823092, 1245962080449233546, 250291945332690752])
+        alice_public_key = ctidh511.public_key_from_bytes(failure)
+        with self.assertRaises(InvalidPublicKey):
+            ctidh511.validate(alice_public_key)
+
+    def test_511_invalid_public_key_minus_two(self):
+        ctidh511 = ctidh(511)
+        base = ctidh511.public_key()
+        # This is '-2'
+        failure = pack('<' + 'Q' * 8, * [11892412458086216418,
+            10280776466921419070, 16747520083844389602, 17149892788049149483,
+            2443181526801758929, 4111277804978653582, 16951589577170471360,
+            7078347295084591743])
+        alice_public_key = ctidh511.public_key_from_bytes(failure)
+        with self.assertRaises(InvalidPublicKey):
+            ctidh511.validate(alice_public_key)
+
+    def test_511_invalid_public_key_p(self):
+        ctidh511 = ctidh(511)
+        base = ctidh511.public_key()
+        # This is 'p'
+        failure = pack('<' + 'Q' * 8, * [0x8dc0dc8299e3643d,
+            0xe1390dfa2bd6541a, 0xa8b398660f85a792, 0xd3d56362b3f9aa83,
+            0x2d7dfe63499164e6, 0x5a16841d76e44621, 0xfe455868af1f2625,
+            0x32da4747ba07c4df ])
+        alice_public_key = ctidh511.public_key_from_bytes(failure)
+        with self.assertRaises(InvalidPublicKey):
+            ctidh511.validate(alice_public_key)
+
+    def test_511_invalid_public_key_p_minus_one(self):
+        ctidh511 = ctidh(511)
+        base = ctidh511.public_key()
+        # This is 'p-1'
+        failure = pack('<' + 'Q' * 8, * [16160612637405068718,
+            2922662260085902521, 11306615388385023236, 14615790144789391769,
+            4499646569585951311, 8547160077474065128, 17574570617395088133,
+            7203493267750937119])
+        alice_public_key = ctidh511.public_key_from_bytes(failure)
+        with self.assertRaises(InvalidPublicKey):
+            ctidh511.validate(alice_public_key)
+
+    def test_511_invalid_public_key_p_plus_one(self):
+        ctidh511 = ctidh(511)
+        base = ctidh511.public_key()
+        # This is 'p+1'
+        failure = pack('<' + 'Q' * 8, * [4268200179318852300,
+            11088629866874035067, 13005839378250185249, 15912641430449793901,
+            2056465042784192381, 4435882272495411546, 622981040224616773,
+            125145972666345376])
+        alice_public_key = ctidh511.public_key_from_bytes(failure)
+        with self.assertRaises(InvalidPublicKey):
+            ctidh511.validate(alice_public_key)
 
     def test_511_base_len(self):
         ctidh511 = ctidh(511)
@@ -102,78 +186,97 @@ class TestHighCTIDH(unittest.TestCase):
     def test_511_dynamic(self):
         ctidh511 = ctidh(511)
         base = ctidh511.public_key()
-
         alice_private_key = ctidh511.private_key()
         bob_private_key = ctidh511.private_key()
-
         ctidh511.csidh_private(alice_private_key)
         ctidh511.csidh_private(bob_private_key)
-
         alice_public_key = ctidh511.public_key()
         bob_public_key = ctidh511.public_key()
-
         self.assertTrue(ctidh511.csidh(alice_public_key, base, alice_private_key))
         self.assertTrue(ctidh511.validate(alice_public_key))
         self.assertTrue(ctidh511.csidh(bob_public_key, base, bob_private_key))
         self.assertTrue(ctidh511.validate(bob_public_key))
         self.assertNotEqual(bytes(alice_public_key), bytes(bob_public_key))
-
         alice_shared_key = ctidh511.public_key()
         bob_shared_key = ctidh511.public_key()
         self.assertTrue(ctidh511.csidh(alice_shared_key, bob_public_key, alice_private_key))
         self.assertTrue(ctidh511.csidh(bob_shared_key, alice_public_key, bob_private_key))
         self.assertEqual(bytes(alice_shared_key), bytes(bob_shared_key))
 
+    def test_511_dynamic_dh(self):
+        ctidh511 = ctidh(511)
+        alice_private_key = ctidh511.generate_secret_key()
+        bob_private_key = ctidh511.generate_secret_key()
+        alice_public_key = ctidh511.derive_public_key(alice_private_key)
+        bob_public_key = ctidh511.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh511.dh(alice_private_key, bob_public_key),
+                         ctidh511.dh(bob_private_key, alice_public_key))
+
+    def test_511_static_dh_from_hex(self):
+        ctidh511 = ctidh(511)
+        python_alice_sk_511_vector_hex = python_alice_sk_511_vector.hex()
+        python_alice_pk_511_vector_hex = python_alice_pk_511_vector.hex()
+        python_bob_sk_511_vector_hex = python_bob_sk_511_vector.hex()
+        python_bob_pk_511_vector_hex = python_bob_pk_511_vector.hex()
+        alice_private_key = ctidh511.private_key_from_hex(python_alice_sk_511_vector_hex)
+        bob_private_key = ctidh511.private_key_from_hex(python_bob_sk_511_vector_hex)
+        alice_public_key = ctidh511.public_key_from_hex(python_alice_pk_511_vector_hex)
+        bob_public_key = ctidh511.public_key_from_hex(python_bob_pk_511_vector_hex)
+        self.assertEqual(ctidh511.dh(alice_private_key, bob_public_key), python_ss_dh_511_vector)
+        self.assertEqual(ctidh511.dh(bob_private_key, alice_public_key), python_ss_dh_511_vector)
+
+    def test_511_static_dh(self):
+        ctidh511 = ctidh(511)
+        alice_private_key = ctidh511.private_key_from_bytes(python_alice_sk_511_vector)
+        bob_private_key = ctidh511.private_key_from_bytes(python_bob_sk_511_vector)
+        alice_public_key = ctidh511.derive_public_key(alice_private_key)
+        bob_public_key = ctidh511.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh511.dh(alice_private_key, bob_public_key), python_ss_dh_511_vector)
+        self.assertEqual(ctidh511.dh(bob_private_key, alice_public_key), python_ss_dh_511_vector)
+
     def test_511_static_vectors(self):
         ctidh511 = ctidh(511)
         base = ctidh511.public_key()
         alice_python_public_key = ctidh511.public_key()
         self.assertTrue(ctidh511.csidh(alice_python_public_key, base,
-            ctidh511.private_key_from_hex(python_alice_sk_511_vector)))
+            ctidh511.private_key_from_bytes(python_alice_sk_511_vector)))
         self.assertEqual(bytes(alice_python_public_key).hex(),
-                bytes(ctidh511.public_key_from_hex(python_alice_pk_511_vector)).hex())
-
+                bytes(ctidh511.public_key_from_bytes(python_alice_pk_511_vector)).hex())
         bob_python_public_key = ctidh511.public_key()
         self.assertTrue(ctidh511.csidh(bob_python_public_key, base,
-            ctidh511.private_key_from_hex(python_bob_sk_511_vector)))
+            ctidh511.private_key_from_bytes(python_bob_sk_511_vector)))
         self.assertEqual(bytes(bob_python_public_key).hex(),
-                bytes(ctidh511.public_key_from_hex(python_bob_pk_511_vector)).hex())
-
+                bytes(ctidh511.public_key_from_bytes(python_bob_pk_511_vector)).hex())
         bob_python_shared_key = ctidh511.public_key()
         alice_python_shared_key = ctidh511.public_key()
         self.assertTrue(ctidh511.csidh(alice_python_shared_key, bob_python_public_key,
-                ctidh511.private_key_from_hex(python_alice_sk_511_vector)))
+                ctidh511.private_key_from_bytes(python_alice_sk_511_vector)))
         self.assertTrue(ctidh511.csidh(bob_python_shared_key, alice_python_public_key,
-                ctidh511.private_key_from_hex(python_bob_sk_511_vector)))
-
+                ctidh511.private_key_from_bytes(python_bob_sk_511_vector)))
         self.assertEqual(bytes(alice_python_shared_key).hex(), python_ss_511_vector.hex())
         self.assertEqual(bytes(bob_python_shared_key).hex(), python_ss_511_vector.hex())
-        self.assertTrue(ctidh511.validate(ctidh511.public_key_from_hex(python_alice_pk_511_vector)))
-        self.assertTrue(ctidh511.validate(ctidh511.public_key_from_hex(python_bob_pk_511_vector)))
+        self.assertTrue(ctidh511.validate(ctidh511.public_key_from_bytes(python_alice_pk_511_vector)))
+        self.assertTrue(ctidh511.validate(ctidh511.public_key_from_bytes(python_bob_pk_511_vector)))
 
     def test_511_static_golang_vectors(self):
         ctidh511 = ctidh(511)
         base = ctidh511.public_key()
-
         alice_public_key = ctidh511.public_key()
         self.assertTrue(ctidh511.csidh(alice_public_key, base,
-            ctidh511.private_key_from_hex(golang_alice_sk_511_vector)))
+            ctidh511.private_key_from_bytes(golang_alice_sk_511_vector)))
         self.assertEqual(bytes(alice_public_key).hex(),
-                bytes(ctidh511.public_key_from_hex(golang_alice_pk_511_vector)).hex())
-
+                bytes(ctidh511.public_key_from_bytes(golang_alice_pk_511_vector)).hex())
         bob_public_key = ctidh511.public_key()
         self.assertTrue(ctidh511.csidh(bob_public_key, base,
-            ctidh511.private_key_from_hex(golang_bob_sk_511_vector)))
+            ctidh511.private_key_from_bytes(golang_bob_sk_511_vector)))
         self.assertEqual(bytes(bob_public_key).hex(),
-                bytes(ctidh511.public_key_from_hex(golang_bob_pk_511_vector)).hex())
-
+                bytes(ctidh511.public_key_from_bytes(golang_bob_pk_511_vector)).hex())
         bob_shared_key = ctidh511.public_key()
         alice_shared_key = ctidh511.public_key()
         self.assertTrue(ctidh511.csidh(alice_shared_key, bob_public_key,
-                ctidh511.private_key_from_hex(golang_alice_sk_511_vector)))
+                ctidh511.private_key_from_bytes(golang_alice_sk_511_vector)))
         self.assertTrue(ctidh511.csidh(bob_shared_key, alice_public_key,
-                ctidh511.private_key_from_hex(golang_bob_sk_511_vector)))
-
+                ctidh511.private_key_from_bytes(golang_bob_sk_511_vector)))
         self.assertEqual(bytes(alice_shared_key).hex(), golang_ss_511_vector.hex())
         self.assertEqual(bytes(bob_shared_key).hex(), golang_ss_511_vector.hex())
 
@@ -213,78 +316,84 @@ class TestHighCTIDH(unittest.TestCase):
     def test_512_dynamic(self):
         ctidh512 = ctidh(512)
         base = ctidh512.public_key()
-
         alice_private_key = ctidh512.private_key()
         bob_private_key = ctidh512.private_key()
-
         ctidh512.csidh_private(alice_private_key)
         ctidh512.csidh_private(bob_private_key)
-
         alice_public_key = ctidh512.public_key()
         bob_public_key = ctidh512.public_key()
-
         self.assertTrue(ctidh512.csidh(alice_public_key, base, alice_private_key))
         self.assertTrue(ctidh512.validate(alice_public_key))
         self.assertTrue(ctidh512.csidh(bob_public_key, base, bob_private_key))
         self.assertTrue(ctidh512.validate(bob_public_key))
         self.assertNotEqual(bytes(alice_public_key), bytes(bob_public_key))
-
         alice_shared_key = ctidh512.public_key()
         bob_shared_key = ctidh512.public_key()
         self.assertTrue(ctidh512.csidh(alice_shared_key, bob_public_key, alice_private_key))
         self.assertTrue(ctidh512.csidh(bob_shared_key, alice_public_key, bob_private_key))
         self.assertEqual(bytes(alice_shared_key), bytes(bob_shared_key))
 
+    def test_512_dynamic_dh(self):
+        ctidh512 = ctidh(512)
+        alice_private_key = ctidh512.generate_secret_key()
+        bob_private_key = ctidh512.generate_secret_key()
+        alice_public_key = ctidh512.derive_public_key(alice_private_key)
+        bob_public_key = ctidh512.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh512.dh(alice_private_key, bob_public_key),
+                         ctidh512.dh(bob_private_key, alice_public_key))
+
+    def test_512_static_dh(self):
+        ctidh512 = ctidh(512)
+        alice_private_key = ctidh512.private_key_from_bytes(python_alice_sk_512_vector)
+        bob_private_key = ctidh512.private_key_from_bytes(python_bob_sk_512_vector)
+        alice_public_key = ctidh512.derive_public_key(alice_private_key)
+        bob_public_key = ctidh512.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh512.dh(alice_private_key, bob_public_key), python_ss_dh_512_vector)
+        self.assertEqual(ctidh512.dh(bob_private_key, alice_public_key), python_ss_dh_512_vector)
+
     def test_512_static_vectors(self):
         ctidh512 = ctidh(512)
         base = ctidh512.public_key()
         alice_python_public_key = ctidh512.public_key()
         self.assertTrue(ctidh512.csidh(alice_python_public_key, base,
-            ctidh512.private_key_from_hex(python_alice_sk_512_vector)))
+            ctidh512.private_key_from_bytes(python_alice_sk_512_vector)))
         self.assertEqual(bytes(alice_python_public_key).hex(), 
-                bytes(ctidh512.public_key_from_hex(python_alice_pk_512_vector)).hex())
-
+                bytes(ctidh512.public_key_from_bytes(python_alice_pk_512_vector)).hex())
         bob_python_public_key = ctidh512.public_key()
         self.assertTrue(ctidh512.csidh(bob_python_public_key, base,
-            ctidh512.private_key_from_hex(python_bob_sk_512_vector)))
+            ctidh512.private_key_from_bytes(python_bob_sk_512_vector)))
         self.assertEqual(bytes(bob_python_public_key).hex(),
-                bytes(ctidh512.public_key_from_hex(python_bob_pk_512_vector)).hex())
-
+                bytes(ctidh512.public_key_from_bytes(python_bob_pk_512_vector)).hex())
         bob_python_shared_key = ctidh512.public_key()
         alice_python_shared_key = ctidh512.public_key()
         self.assertTrue(ctidh512.csidh(alice_python_shared_key, bob_python_public_key,
-                ctidh512.private_key_from_hex(python_alice_sk_512_vector)))
+                ctidh512.private_key_from_bytes(python_alice_sk_512_vector)))
         self.assertTrue(ctidh512.csidh(bob_python_shared_key, alice_python_public_key,
-                ctidh512.private_key_from_hex(python_bob_sk_512_vector)))
-
+                ctidh512.private_key_from_bytes(python_bob_sk_512_vector)))
         self.assertEqual(bytes(alice_python_shared_key).hex(), python_ss_512_vector.hex())
         self.assertEqual(bytes(bob_python_shared_key).hex(), python_ss_512_vector.hex())
-        self.assertTrue(ctidh512.validate(ctidh512.public_key_from_hex(python_alice_pk_512_vector)))
-        self.assertTrue(ctidh512.validate(ctidh512.public_key_from_hex(python_bob_pk_512_vector)))
+        self.assertTrue(ctidh512.validate(ctidh512.public_key_from_bytes(python_alice_pk_512_vector)))
+        self.assertTrue(ctidh512.validate(ctidh512.public_key_from_bytes(python_bob_pk_512_vector)))
 
     def test_512_static_golang_vectors(self):
         ctidh512 = ctidh(512)
         base = ctidh512.public_key()
-
         alice_public_key = ctidh512.public_key()
         self.assertTrue(ctidh512.csidh(alice_public_key, base,
-            ctidh512.private_key_from_hex(golang_alice_sk_512_vector)))
+            ctidh512.private_key_from_bytes(golang_alice_sk_512_vector)))
         self.assertEqual(bytes(alice_public_key).hex(),
-                bytes(ctidh512.public_key_from_hex(golang_alice_pk_512_vector)).hex())
-
+                bytes(ctidh512.public_key_from_bytes(golang_alice_pk_512_vector)).hex())
         bob_public_key = ctidh512.public_key()
         self.assertTrue(ctidh512.csidh(bob_public_key, base,
-            ctidh512.private_key_from_hex(golang_bob_sk_512_vector)))
+            ctidh512.private_key_from_bytes(golang_bob_sk_512_vector)))
         self.assertEqual(bytes(bob_public_key).hex(),
-                bytes(ctidh512.public_key_from_hex(golang_bob_pk_512_vector)).hex())
-
+                bytes(ctidh512.public_key_from_bytes(golang_bob_pk_512_vector)).hex())
         bob_shared_key = ctidh512.public_key()
         alice_shared_key = ctidh512.public_key()
         self.assertTrue(ctidh512.csidh(alice_shared_key, bob_public_key,
-                ctidh512.private_key_from_hex(golang_alice_sk_512_vector)))
+                ctidh512.private_key_from_bytes(golang_alice_sk_512_vector)))
         self.assertTrue(ctidh512.csidh(bob_shared_key, alice_public_key,
-                ctidh512.private_key_from_hex(golang_bob_sk_512_vector)))
-
+                ctidh512.private_key_from_bytes(golang_bob_sk_512_vector)))
         self.assertEqual(bytes(alice_shared_key).hex(), golang_ss_512_vector.hex())
         self.assertEqual(bytes(bob_shared_key).hex(), golang_ss_512_vector.hex())
 
@@ -324,78 +433,84 @@ class TestHighCTIDH(unittest.TestCase):
     def test_1024_dynamic(self):
         ctidh1024 = ctidh(1024)
         base = ctidh1024.public_key()
-
         alice_private_key = ctidh1024.private_key()
         bob_private_key = ctidh1024.private_key()
-
         ctidh1024.csidh_private(alice_private_key)
         ctidh1024.csidh_private(bob_private_key)
-
         alice_public_key = ctidh1024.public_key()
         bob_public_key = ctidh1024.public_key()
-
         self.assertTrue(ctidh1024.csidh(alice_public_key, base, alice_private_key))
         self.assertTrue(ctidh1024.validate(alice_public_key))
         self.assertTrue(ctidh1024.csidh(bob_public_key, base, bob_private_key))
         self.assertTrue(ctidh1024.validate(bob_public_key))
         self.assertNotEqual(bytes(alice_public_key), bytes(bob_public_key))
-
         alice_shared_key = ctidh1024.public_key()
         bob_shared_key = ctidh1024.public_key()
         self.assertTrue(ctidh1024.csidh(alice_shared_key, bob_public_key, alice_private_key))
         self.assertTrue(ctidh1024.csidh(bob_shared_key, alice_public_key, bob_private_key))
         self.assertEqual(bytes(alice_shared_key), bytes(bob_shared_key))
 
+    def test_1024_dynamic_dh(self):
+        ctidh1024 = ctidh(1024)
+        alice_private_key = ctidh1024.generate_secret_key()
+        bob_private_key = ctidh1024.generate_secret_key()
+        alice_public_key = ctidh1024.derive_public_key(alice_private_key)
+        bob_public_key = ctidh1024.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh1024.dh(alice_private_key, bob_public_key),
+                         ctidh1024.dh(bob_private_key, alice_public_key))
+
+    def test_1024_static_dh(self):
+        ctidh1024 = ctidh(1024)
+        alice_private_key = ctidh1024.private_key_from_bytes(python_alice_sk_1024_vector)
+        bob_private_key = ctidh1024.private_key_from_bytes(python_alice_sk_1024_vector)
+        alice_public_key = ctidh1024.derive_public_key(alice_private_key)
+        bob_public_key = ctidh1024.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh1024.dh(alice_private_key, bob_public_key), python_ss_dh_1024_vector)
+        self.assertEqual(ctidh1024.dh(bob_private_key, alice_public_key), python_ss_dh_1024_vector)
+
     def test_1024_static_vectors(self):
         ctidh1024 = ctidh(1024)
         base = ctidh1024.public_key()
         alice_python_public_key = ctidh1024.public_key()
         self.assertTrue(ctidh1024.csidh(alice_python_public_key, base,
-            ctidh1024.private_key_from_hex(python_alice_sk_1024_vector)))
+            ctidh1024.private_key_from_bytes(python_alice_sk_1024_vector)))
         self.assertEqual(bytes(alice_python_public_key).hex(), 
-                bytes(ctidh1024.public_key_from_hex(python_alice_pk_1024_vector)).hex())
-
+                bytes(ctidh1024.public_key_from_bytes(python_alice_pk_1024_vector)).hex())
         bob_python_public_key = ctidh1024.public_key()
         self.assertTrue(ctidh1024.csidh(bob_python_public_key, base,
-            ctidh1024.private_key_from_hex(python_bob_sk_1024_vector)))
+            ctidh1024.private_key_from_bytes(python_bob_sk_1024_vector)))
         self.assertEqual(bytes(bob_python_public_key).hex(),
-                bytes(ctidh1024.public_key_from_hex(python_bob_pk_1024_vector)).hex())
-
+                bytes(ctidh1024.public_key_from_bytes(python_bob_pk_1024_vector)).hex())
         bob_python_shared_key = ctidh1024.public_key()
         alice_python_shared_key = ctidh1024.public_key()
         self.assertTrue(ctidh1024.csidh(alice_python_shared_key, bob_python_public_key,
-                ctidh1024.private_key_from_hex(python_alice_sk_1024_vector)))
+                ctidh1024.private_key_from_bytes(python_alice_sk_1024_vector)))
         self.assertTrue(ctidh1024.csidh(bob_python_shared_key, alice_python_public_key,
-                ctidh1024.private_key_from_hex(python_bob_sk_1024_vector)))
-
+                ctidh1024.private_key_from_bytes(python_bob_sk_1024_vector)))
         self.assertEqual(bytes(alice_python_shared_key).hex(), python_ss_1024_vector.hex())
         self.assertEqual(bytes(bob_python_shared_key).hex(), python_ss_1024_vector.hex())
-        self.assertTrue(ctidh1024.validate(ctidh1024.public_key_from_hex(python_alice_pk_1024_vector)))
-        self.assertTrue(ctidh1024.validate(ctidh1024.public_key_from_hex(python_bob_pk_1024_vector)))
+        self.assertTrue(ctidh1024.validate(ctidh1024.public_key_from_bytes(python_alice_pk_1024_vector)))
+        self.assertTrue(ctidh1024.validate(ctidh1024.public_key_from_bytes(python_bob_pk_1024_vector)))
 
     def test_1024_static_golang_vectors(self):
         ctidh1024 = ctidh(1024)
         base = ctidh1024.public_key()
-
         alice_public_key = ctidh1024.public_key()
         self.assertTrue(ctidh1024.csidh(alice_public_key, base,
-            ctidh1024.private_key_from_hex(golang_alice_sk_1024_vector)))
+            ctidh1024.private_key_from_bytes(golang_alice_sk_1024_vector)))
         self.assertEqual(bytes(alice_public_key).hex(),
-                bytes(ctidh1024.public_key_from_hex(golang_alice_pk_1024_vector)).hex())
-
+                bytes(ctidh1024.public_key_from_bytes(golang_alice_pk_1024_vector)).hex())
         bob_public_key = ctidh1024.public_key()
         self.assertTrue(ctidh1024.csidh(bob_public_key, base,
-            ctidh1024.private_key_from_hex(golang_bob_sk_1024_vector)))
+            ctidh1024.private_key_from_bytes(golang_bob_sk_1024_vector)))
         self.assertEqual(bytes(bob_public_key).hex(),
-                bytes(ctidh1024.public_key_from_hex(golang_bob_pk_1024_vector)).hex())
-
+                bytes(ctidh1024.public_key_from_bytes(golang_bob_pk_1024_vector)).hex())
         bob_shared_key = ctidh1024.public_key()
         alice_shared_key = ctidh1024.public_key()
         self.assertTrue(ctidh1024.csidh(alice_shared_key, bob_public_key,
-                ctidh1024.private_key_from_hex(golang_alice_sk_1024_vector)))
+                ctidh1024.private_key_from_bytes(golang_alice_sk_1024_vector)))
         self.assertTrue(ctidh1024.csidh(bob_shared_key, alice_public_key,
-                ctidh1024.private_key_from_hex(golang_bob_sk_1024_vector)))
-
+                ctidh1024.private_key_from_bytes(golang_bob_sk_1024_vector)))
         self.assertEqual(bytes(alice_shared_key).hex(), golang_ss_1024_vector.hex())
         self.assertEqual(bytes(bob_shared_key).hex(), golang_ss_1024_vector.hex())
 
@@ -435,78 +550,84 @@ class TestHighCTIDH(unittest.TestCase):
     def test_2048_dynamic(self):
         ctidh2048 = ctidh(2048)
         base = ctidh2048.public_key()
-
         alice_private_key = ctidh2048.private_key()
         bob_private_key = ctidh2048.private_key()
-
         ctidh2048.csidh_private(alice_private_key)
         ctidh2048.csidh_private(bob_private_key)
-
         alice_public_key = ctidh2048.public_key()
         bob_public_key = ctidh2048.public_key()
-
         self.assertTrue(ctidh2048.csidh(alice_public_key, base, alice_private_key))
         self.assertTrue(ctidh2048.validate(alice_public_key))
         self.assertTrue(ctidh2048.csidh(bob_public_key, base, bob_private_key))
         self.assertTrue(ctidh2048.validate(bob_public_key))
         self.assertNotEqual(bytes(alice_public_key), bytes(bob_public_key))
-
         alice_shared_key = ctidh2048.public_key()
         bob_shared_key = ctidh2048.public_key()
         self.assertTrue(ctidh2048.csidh(alice_shared_key, bob_public_key, alice_private_key))
         self.assertTrue(ctidh2048.csidh(bob_shared_key, alice_public_key, bob_private_key))
         self.assertEqual(bytes(alice_shared_key), bytes(bob_shared_key))
 
+    def test_2048_dynamic_dh(self):
+        ctidh2048 = ctidh(2048)
+        alice_private_key = ctidh2048.generate_secret_key()
+        bob_private_key = ctidh2048.generate_secret_key()
+        alice_public_key = ctidh2048.derive_public_key(alice_private_key)
+        bob_public_key = ctidh2048.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh2048.dh(alice_private_key, bob_public_key),
+                         ctidh2048.dh(bob_private_key, alice_public_key))
+
+    def test_2048_static_dh(self):
+        ctidh2048 = ctidh(2048)
+        alice_private_key = ctidh2048.private_key_from_bytes(python_alice_sk_2048_vector)
+        bob_private_key = ctidh2048.private_key_from_bytes(python_alice_sk_2048_vector)
+        alice_public_key = ctidh2048.derive_public_key(alice_private_key)
+        bob_public_key = ctidh2048.derive_public_key(bob_private_key)
+        self.assertEqual(ctidh2048.dh(alice_private_key, bob_public_key), python_ss_dh_2048_vector)
+        self.assertEqual(ctidh2048.dh(bob_private_key, alice_public_key), python_ss_dh_2048_vector)
+
     def test_2048_static_vectors(self):
         ctidh2048 = ctidh(2048)
         base = ctidh2048.public_key()
         alice_python_public_key = ctidh2048.public_key()
         self.assertTrue(ctidh2048.csidh(alice_python_public_key, base,
-            ctidh2048.private_key_from_hex(python_alice_sk_2048_vector)))
+            ctidh2048.private_key_from_bytes(python_alice_sk_2048_vector)))
         self.assertEqual(bytes(alice_python_public_key).hex(), 
-                bytes(ctidh2048.public_key_from_hex(python_alice_pk_2048_vector)).hex())
-
+                bytes(ctidh2048.public_key_from_bytes(python_alice_pk_2048_vector)).hex())
         bob_python_public_key = ctidh2048.public_key()
         self.assertTrue(ctidh2048.csidh(bob_python_public_key, base,
-            ctidh2048.private_key_from_hex(python_bob_sk_2048_vector)))
+            ctidh2048.private_key_from_bytes(python_bob_sk_2048_vector)))
         self.assertEqual(bytes(bob_python_public_key).hex(),
-                bytes(ctidh2048.public_key_from_hex(python_bob_pk_2048_vector)).hex())
-
+                bytes(ctidh2048.public_key_from_bytes(python_bob_pk_2048_vector)).hex())
         bob_python_shared_key = ctidh2048.public_key()
         alice_python_shared_key = ctidh2048.public_key()
         self.assertTrue(ctidh2048.csidh(alice_python_shared_key, bob_python_public_key,
-                ctidh2048.private_key_from_hex(python_alice_sk_2048_vector)))
+                ctidh2048.private_key_from_bytes(python_alice_sk_2048_vector)))
         self.assertTrue(ctidh2048.csidh(bob_python_shared_key, alice_python_public_key,
-                ctidh2048.private_key_from_hex(python_bob_sk_2048_vector)))
-
+                ctidh2048.private_key_from_bytes(python_bob_sk_2048_vector)))
         self.assertEqual(bytes(alice_python_shared_key).hex(), python_ss_2048_vector.hex())
         self.assertEqual(bytes(bob_python_shared_key).hex(), python_ss_2048_vector.hex())
-        self.assertTrue(ctidh2048.validate(ctidh2048.public_key_from_hex(python_alice_pk_2048_vector)))
-        self.assertTrue(ctidh2048.validate(ctidh2048.public_key_from_hex(python_bob_pk_2048_vector)))
+        self.assertTrue(ctidh2048.validate(ctidh2048.public_key_from_bytes(python_alice_pk_2048_vector)))
+        self.assertTrue(ctidh2048.validate(ctidh2048.public_key_from_bytes(python_bob_pk_2048_vector)))
 
     def test_2048_static_golang_vectors(self):
         ctidh2048 = ctidh(2048)
         base = ctidh2048.public_key()
-
         alice_public_key = ctidh2048.public_key()
         self.assertTrue(ctidh2048.csidh(alice_public_key, base,
-            ctidh2048.private_key_from_hex(golang_alice_sk_2048_vector)))
+            ctidh2048.private_key_from_bytes(golang_alice_sk_2048_vector)))
         self.assertEqual(bytes(alice_public_key).hex(),
-                bytes(ctidh2048.public_key_from_hex(golang_alice_pk_2048_vector)).hex())
-
+                bytes(ctidh2048.public_key_from_bytes(golang_alice_pk_2048_vector)).hex())
         bob_public_key = ctidh2048.public_key()
         self.assertTrue(ctidh2048.csidh(bob_public_key, base,
-            ctidh2048.private_key_from_hex(golang_bob_sk_2048_vector)))
+            ctidh2048.private_key_from_bytes(golang_bob_sk_2048_vector)))
         self.assertEqual(bytes(bob_public_key).hex(),
-                bytes(ctidh2048.public_key_from_hex(golang_bob_pk_2048_vector)).hex())
-
+                bytes(ctidh2048.public_key_from_bytes(golang_bob_pk_2048_vector)).hex())
         bob_shared_key = ctidh2048.public_key()
         alice_shared_key = ctidh2048.public_key()
         self.assertTrue(ctidh2048.csidh(alice_shared_key, bob_public_key,
-                ctidh2048.private_key_from_hex(golang_alice_sk_2048_vector)))
+                ctidh2048.private_key_from_bytes(golang_alice_sk_2048_vector)))
         self.assertTrue(ctidh2048.csidh(bob_shared_key, alice_public_key,
-                ctidh2048.private_key_from_hex(golang_bob_sk_2048_vector)))
-
+                ctidh2048.private_key_from_bytes(golang_bob_sk_2048_vector)))
         self.assertEqual(bytes(alice_shared_key).hex(), golang_ss_2048_vector.hex())
         self.assertEqual(bytes(bob_shared_key).hex(), golang_ss_2048_vector.hex())
 
