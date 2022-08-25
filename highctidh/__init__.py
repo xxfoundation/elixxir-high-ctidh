@@ -113,3 +113,7 @@ class ctidh(object):
         shared_key = self.public_key()
         self.csidh(shared_key, pk, sk)
         return _hash(bytes(shared_key), self.pk_size)
+    def blind(self, blinding_factor, pk):
+        blinded_key = self.public_key()
+        self.csidh(blinded_key, pk, blinding_factor)
+        return blinded_key
