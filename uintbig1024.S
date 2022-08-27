@@ -12,6 +12,8 @@ uintbig_1:
     .quad 0, 0, 0, 0
     .quad 0, 0, 0, 0
     .quad 0, 0, 0, 0
+    .size uintbig_1, 128
+    .type uintbig_1, @object
 
 .global uintbig_p
 uintbig_p:
@@ -19,6 +21,8 @@ uintbig_p:
     .quad 0x642aca4d5a313709, 0x6b317c5431541f40, 0xb97c56d1de81ede5, 0x0978dbeed90a2b58
     .quad 0x7611ad4f90441c80, 0xf811d9c419ec8329, 0x4d6c594a8ad82d2d, 0xf06de2471cf9386e
     .quad 0x0683cf25db31ad5b, 0x216c22bc86f21a08, 0xd89dec879007ebd7, 0x0ece55ed427012a9
+    .size uintbig_p, 128
+    .type uintbig_p, @object
 
 .global uintbig_four_sqrt_p
 uintbig_four_sqrt_p:
@@ -26,6 +30,8 @@ uintbig_four_sqrt_p:
     .quad 0x4a598c9571aeb858, 0xc5617b211ccad355, 0x4fb69e4928ccc442, 0xf643475c7915859c
     .quad 0, 0, 0, 0
     .quad 0, 0, 0, 0
+    .size uintbig_four_sqrt_p, 128
+    .type uintbig_four_sqrt_p, @object
 
 .section .text
 

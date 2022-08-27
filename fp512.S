@@ -10,22 +10,32 @@
 .set pbits,511
 .set pbytes,64
 .set plimbs,8
+.uintbig_p_local:
+    .quad 0x1b81b90533c6c87b, 0xc2721bf457aca835, 0x516730cc1f0b4f25, 0xa7aac6c567f35507
+    .quad 0x5afbfcc69322c9cd, 0xb42d083aedc88c42, 0xfc8ab0d15e3e4c4a, 0x65b48e8f740f89bf
+
 .inv_min_p_mod_r: /* -p^-1 mod 2^64 */
     .quad 0x66c1301f632e294d
 
 .global fp_0
 fp_0:
     .zero 64
+    .size fp_0, 64
+    .type fp_0, @object
 
 .global fp_1
 fp_1: /* 2^512 mod p */
     .quad 0xc8fc8df598726f0a, 0x7b1bc81750a6af95, 0x5d319e67c1e961b4, 0xb0aa7275301955f1
     .quad 0x4a080672d9ba6c64, 0x97a5ef8a246ee77b, 0x06ea9e5d4383676a, 0x3496e2e117e0ec80
+    .size fp_1, 64
+    .type fp_1, @object
 
 .global fp_2
 fp_2: /* 2^513 mod p */
     .quad 0x767762e5fd1e1599, 0x33c5743a49a0b6f6, 0x68fc0c0364c77443, 0xb9aa1e24f83f56db
     .quad 0x3914101f20520efb, 0x7b1ed6d95b1542b4, 0x114a8be928c8828a, 0x03793732bbb24f40
+    .size fp_2, 64
+    .type fp_2, @object
 
 .r_squared_mod_p: /* (2^512)^2 mod p */
     .quad 0x36905b572ffc1724, 0x67086f4525f1f27d, 0x4faf3fbfd22370ca, 0x192ea214bcc584b1
@@ -99,21 +109,21 @@ fp_cswap:
     mov rbp, rdi
 
     mov rdi, [rbp + 0]
-    sub rdi, [rip + uintbig_p + 0]
+    sub rdi, [rip + .uintbig_p_local + 0]
     mov rsi, [rbp + 8]
-    sbb rsi, [rip + uintbig_p + 8]
+    sbb rsi, [rip + .uintbig_p_local + 8]
     mov rdx, [rbp + 16]
-    sbb rdx, [rip + uintbig_p + 16]
+    sbb rdx, [rip + .uintbig_p_local + 16]
     mov rcx, [rbp + 24]
-    sbb rcx, [rip + uintbig_p + 24]
+    sbb rcx, [rip + .uintbig_p_local + 24]
     mov r8,  [rbp + 32]
-    sbb r8,  [rip + uintbig_p + 32]
+    sbb r8,  [rip + .uintbig_p_local + 32]
     mov r9,  [rbp + 40]
-    sbb r9,  [rip + uintbig_p + 40]
+    sbb r9,  [rip + .uintbig_p_local + 40]
     mov r10, [rbp + 48]
-    sbb r10, [rip + uintbig_p + 48]
+    sbb r10, [rip + .uintbig_p_local + 48]
     mov r11, [rbp + 56]
-    sbb r11, [rip + uintbig_p + 56]
+    sbb r11, [rip + .uintbig_p_local + 56]
 
     setnc al
     movzx rax, al
@@ -142,7 +152,8 @@ fp_add2:
     mov rdx, rdi
 .global fp_add3
 fp_add3:
-    addq [fp_addsub_count+rip],1
+    movq rax, [rip + fp_addsub_count@GOTPCREL]
+    addq [rax], 1
     push rdi
     call uintbig_add3
     pop rdi
@@ -154,7 +165,8 @@ fp_sub2:
   xchg rsi, rdx
 .global fp_sub3
 fp_sub3:
-    addq [fp_addsub_count+rip],1
+    movq rax, [rip + fp_addsub_count@GOTPCREL]
+    addq [rax], 1
     push rdi
     call uintbig_sub3
     pop rdi
@@ -162,12 +174,12 @@ fp_sub3:
 
     sub rsp, pbytes
 
-    mov rcx, [rip + uintbig_p +  0]
+    mov rcx, [rip + .uintbig_p_local +  0]
     and rcx, rax
     mov [rsp + 0],rcx
     .set k, 1
     .rept plimbs-1
-        mov rcx, [rip + uintbig_p + 8*k]
+        mov rcx, [rip + .uintbig_p_local + 8*k]
         and rcx, rax
         mov [rsp + 8*k], rcx
         .set k, k+1
@@ -204,7 +216,8 @@ fp_mul3:
 
     push rdi
 
-    addq [fp_mulsq_count+rip],1
+    movq rax, [rip + fp_mulsq_count@GOTPCREL]
+    addq [rax], 1
 
     mov rdi, rsi
     mov rsi, rdx
@@ -230,34 +243,34 @@ fp_mul3:
 
     xor rax, rax /* clear flags */
 
-    mulx rbx, rax, [rip + uintbig_p +  0]
+    mulx rbx, rax, [rip + .uintbig_p_local +  0]
     adox \r0, rax
 
-    mulx rcx, rax, [rip + uintbig_p +  8]
+    mulx rcx, rax, [rip + .uintbig_p_local +  8]
     adcx \r1, rbx
     adox \r1, rax
 
-    mulx rbx, rax, [rip + uintbig_p + 16]
+    mulx rbx, rax, [rip + .uintbig_p_local + 16]
     adcx \r2, rcx
     adox \r2, rax
 
-    mulx rcx, rax, [rip + uintbig_p + 24]
+    mulx rcx, rax, [rip + .uintbig_p_local + 24]
     adcx \r3, rbx
     adox \r3, rax
 
-    mulx rbx, rax, [rip + uintbig_p + 32]
+    mulx rbx, rax, [rip + .uintbig_p_local + 32]
     adcx \r4, rcx
     adox \r4, rax
 
-    mulx rcx, rax, [rip + uintbig_p + 40]
+    mulx rcx, rax, [rip + .uintbig_p_local + 40]
     adcx \r5, rbx
     adox \r5, rax
 
-    mulx rbx, rax, [rip + uintbig_p + 48]
+    mulx rbx, rax, [rip + .uintbig_p_local + 48]
     adcx \r6, rcx
     adox \r6, rax
 
-    mulx rcx, rax, [rip + uintbig_p + 56]
+    mulx rcx, rax, [rip + .uintbig_p_local + 56]
     adcx \r7, rbx
     adox \r7, rax
 
@@ -342,5 +355,6 @@ fp_sq1:
 fp_sq2:
     /* TODO implement optimized Montgomery squaring */
     mov rdx, rsi
-    addq [fp_sq_count+rip],1
+    movq rax, [rip + fp_sq_count@GOTPCREL]
+    addq [rax], 1
     jmp fp_mul3

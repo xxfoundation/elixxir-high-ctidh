@@ -78,3 +78,6 @@ For various size-511 microbenchmarks:
 To select other CSIDH sizes and other CTIDH parameters (subject to
 various undocumented restrictions), edit the table at the top of
 `autogen` and run "`./autogen; make`".
+
+Basic Python bindings are available and more information is available in
+README.python.md.

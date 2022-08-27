@@ -10,12 +10,24 @@
 .set pbits,2047
 .set pbytes,256
 .set plimbs,32
+.uintbig_p_local:
+    .quad 0x7790d615ea034943, 0xdc703f0cd8c4d918, 0x95a98036c813c788, 0xe111b0d22ab8ecaa
+    .quad 0x6478407d7a9a56ee, 0xa7bec86fabaf787f, 0x44454e851cf305ab, 0x44084e1a73c76cb2
+    .quad 0x2842bbe4dbacc65e, 0x58e89497ef35bbb9, 0x9796620b3ad8a5d4, 0x5377d53e856cc9a3
+    .quad 0x7c4cb419996f45e7, 0x88c691b2d452a8ac, 0x0da1783672767abb, 0x9844e5c09baf59ec
+    .quad 0xe33586d1208a1017, 0x7d84f102b5fde2ea, 0x30d2edfe50198c64, 0x095ac8a9f3ce2b0c
+    .quad 0x93e73abd17e3aa46, 0xc680497933375253, 0x6557ebe96d91aedd, 0x4dd6024bf2f8feab
+    .quad 0xb8523d6a302abf28, 0x33a8779a1ec8b8c2, 0x584eb12932f72abb, 0xdbd1fc2133770253
+    .quad 0xddffdcf1aee53f12, 0x4d8854e8b3e19c53, 0x97fefc90e8196ed9, 0x438efcab10254c64
+
 .inv_min_p_mod_r: /* -p^-1 mod 2^64 */
     .quad 0x22249689c54c7495
 
 .global fp_0
 fp_0:
     .zero 256
+    .size fp_0, 256
+    .type fp_0, @object
 
 .global fp_1
 fp_1: /* 2^2048 mod p */
@@ -27,6 +39,8 @@ fp_1: /* 2^2048 mod p */
     .quad 0x444a4fc8b855012d, 0xac7f2394665a0905, 0xcff83c43b74af366, 0x167df91c271503fd
     .quad 0xd70947c16f7fc287, 0x65069931a3a5d5b7, 0xf713ec84671a7fce, 0x6c8a0b9c659af905
     .quad 0x6600692af35042c7, 0x17670145e45b2b04, 0x38030a4d47b3b374, 0x355309fecf901ad2
+    .size fp_1, 256
+    .type fp_1, @object
 
 .global fp_2
 fp_2: /* 2^2049 mod p */
@@ -38,6 +52,8 @@ fp_2: /* 2^2049 mod p */
     .quad 0xf4ad64d458c65815, 0x927dfdaf997cbfb6, 0x3a988c9e010437ef, 0xdf25efec5b310950
     .quad 0xf5c05218aed4c5e5, 0x9664bac92882f2ac, 0x95d927df9b3dd4e1, 0xfd421b1797beefb8
     .quad 0xee00f56437bb467b, 0xe145ada314d4b9b4, 0xd8071809a74df80e, 0x271717528efae93f
+    .size fp_2, 256
+    .type fp_2, @object
 
 .r_squared_mod_p: /* (2^2048)^2 mod p */
     .quad 0x6e940162ecb00f8c, 0x24c744036302b024, 0xc892a6ce3f16637b, 0x37733ccc6ac611b0
@@ -118,93 +134,93 @@ fp_cswap:
     mov rbp, rdi
 
     mov rdi, [rbp + 0]
-    sub rdi, [rip + uintbig_p + 0]
+    sub rdi, [rip + .uintbig_p_local + 0]
     movq [rsp + 0], rdi
     mov rsi, [rbp + 8]
-    sbb rsi, [rip + uintbig_p + 8]
+    sbb rsi, [rip + .uintbig_p_local + 8]
     movq [rsp + 8], rsi
     mov rdx, [rbp + 16]
-    sbb rdx, [rip + uintbig_p + 16]
+    sbb rdx, [rip + .uintbig_p_local + 16]
     movq [rsp + 16], rdx
     mov rcx, [rbp + 24]
-    sbb rcx, [rip + uintbig_p + 24]
+    sbb rcx, [rip + .uintbig_p_local + 24]
     movq [rsp + 24], rcx
     mov r8,  [rbp + 32]
-    sbb r8,  [rip + uintbig_p + 32]
+    sbb r8,  [rip + .uintbig_p_local + 32]
     movq [rsp + 32], r8
     mov r9,  [rbp + 40]
-    sbb r9,  [rip + uintbig_p + 40]
+    sbb r9,  [rip + .uintbig_p_local + 40]
     movq [rsp + 40], r9
     mov r10, [rbp + 48]
-    sbb r10, [rip + uintbig_p + 48]
+    sbb r10, [rip + .uintbig_p_local + 48]
     movq [rsp + 48], r10
     mov r11, [rbp + 56]
-    sbb r11, [rip + uintbig_p + 56]
+    sbb r11, [rip + .uintbig_p_local + 56]
     movq [rsp + 56], r11
     mov rdi, [rbp + 64]
-    sbb rdi, [rip + uintbig_p + 64]
+    sbb rdi, [rip + .uintbig_p_local + 64]
     movq [rsp + 64], rdi
     mov rsi, [rbp + 72]
-    sbb rsi, [rip + uintbig_p + 72]
+    sbb rsi, [rip + .uintbig_p_local + 72]
     movq [rsp + 72], rsi
     mov rdx, [rbp + 80]
-    sbb rdx, [rip + uintbig_p + 80]
+    sbb rdx, [rip + .uintbig_p_local + 80]
     movq [rsp + 80], rdx
     mov rcx, [rbp + 88]
-    sbb rcx, [rip + uintbig_p + 88]
+    sbb rcx, [rip + .uintbig_p_local + 88]
     movq [rsp + 88], rcx
     mov r8,  [rbp + 96]
-    sbb r8,  [rip + uintbig_p + 96]
+    sbb r8,  [rip + .uintbig_p_local + 96]
     movq [rsp + 96], r8
     mov r9,  [rbp + 104]
-    sbb r9,  [rip + uintbig_p + 104]
+    sbb r9,  [rip + .uintbig_p_local + 104]
     movq [rsp + 104], r9
     mov r10, [rbp + 112]
-    sbb r10, [rip + uintbig_p + 112]
+    sbb r10, [rip + .uintbig_p_local + 112]
     movq [rsp + 112], r10
     mov r11, [rbp + 120]
-    sbb r11, [rip + uintbig_p + 120]
+    sbb r11, [rip + .uintbig_p_local + 120]
     movq [rsp + 120], r11
     mov rdi, [rbp + 128]
-    sbb rdi, [rip + uintbig_p + 128]
+    sbb rdi, [rip + .uintbig_p_local + 128]
     movq [rsp + 128], rdi
     mov rsi, [rbp + 136]
-    sbb rsi, [rip + uintbig_p + 136]
+    sbb rsi, [rip + .uintbig_p_local + 136]
     movq [rsp + 136], rsi
     mov rdx, [rbp + 144]
-    sbb rdx, [rip + uintbig_p + 144]
+    sbb rdx, [rip + .uintbig_p_local + 144]
     movq [rsp + 144], rdx
     mov rcx, [rbp + 152]
-    sbb rcx, [rip + uintbig_p + 152]
+    sbb rcx, [rip + .uintbig_p_local + 152]
     movq [rsp + 152], rcx
     mov r8,  [rbp + 160]
-    sbb r8,  [rip + uintbig_p + 160]
+    sbb r8,  [rip + .uintbig_p_local + 160]
     movq [rsp + 160], r8
     mov r9,  [rbp + 168]
-    sbb r9,  [rip + uintbig_p + 168]
+    sbb r9,  [rip + .uintbig_p_local + 168]
     movq [rsp + 168], r9
     mov r10, [rbp + 176]
-    sbb r10, [rip + uintbig_p + 176]
+    sbb r10, [rip + .uintbig_p_local + 176]
     movq [rsp + 176], r10
     mov r11, [rbp + 184]
-    sbb r11, [rip + uintbig_p + 184]
+    sbb r11, [rip + .uintbig_p_local + 184]
     movq [rsp + 184], r11
     mov rdi, [rbp + 192]
-    sbb rdi, [rip + uintbig_p + 192]
+    sbb rdi, [rip + .uintbig_p_local + 192]
     mov rsi, [rbp + 200]
-    sbb rsi, [rip + uintbig_p + 200]
+    sbb rsi, [rip + .uintbig_p_local + 200]
     mov rdx, [rbp + 208]
-    sbb rdx, [rip + uintbig_p + 208]
+    sbb rdx, [rip + .uintbig_p_local + 208]
     mov rcx, [rbp + 216]
-    sbb rcx, [rip + uintbig_p + 216]
+    sbb rcx, [rip + .uintbig_p_local + 216]
     mov r8,  [rbp + 224]
-    sbb r8,  [rip + uintbig_p + 224]
+    sbb r8,  [rip + .uintbig_p_local + 224]
     mov r9,  [rbp + 232]
-    sbb r9,  [rip + uintbig_p + 232]
+    sbb r9,  [rip + .uintbig_p_local + 232]
     mov r10, [rbp + 240]
-    sbb r10, [rip + uintbig_p + 240]
+    sbb r10, [rip + .uintbig_p_local + 240]
     mov r11, [rbp + 248]
-    sbb r11, [rip + uintbig_p + 248]
+    sbb r11, [rip + .uintbig_p_local + 248]
 
     setnc al
     movzx rax, al
@@ -282,7 +298,8 @@ fp_add2:
     mov rdx, rdi
 .global fp_add3
 fp_add3:
-    addq [fp_addsub_count+rip],1
+    movq rax, [rip + fp_addsub_count@GOTPCREL]
+    addq [rax], 1
     push rdi
     call uintbig_add3
     pop rdi
@@ -294,7 +311,8 @@ fp_sub2:
   xchg rsi, rdx
 .global fp_sub3
 fp_sub3:
-    addq [fp_addsub_count+rip],1
+    movq rax, [rip + fp_addsub_count@GOTPCREL]
+    addq [rax], 1
     push rdi
     call uintbig_sub3
     pop rdi
@@ -302,12 +320,12 @@ fp_sub3:
 
     sub rsp, pbytes
 
-    mov rcx, [rip + uintbig_p +  0]
+    mov rcx, [rip + .uintbig_p_local +  0]
     and rcx, rax
     mov [rsp + 0],rcx
     .set k, 1
     .rept plimbs-1
-        mov rcx, [rip + uintbig_p + 8*k]
+        mov rcx, [rip + .uintbig_p_local + 8*k]
         and rcx, rax
         mov [rsp + 8*k], rcx
         .set k, k+1
@@ -338,7 +356,8 @@ fp_mul3:
     push rbp
     push rbx
 
-  addq [fp_mulsq_count+rip],1
+  movq rax, [rip + fp_mulsq_count@GOTPCREL]
+  addq [rax], 1
 
   sub rsp,272
   mov [rsp+264],rdi
@@ -391,192 +410,192 @@ fp_mul3:
 
     xor rax, rax /* clear flags */
 
-    mulx rbx, rax, [rip + uintbig_p +  0]
+    mulx rbx, rax, [rip + .uintbig_p_local +  0]
     adox r11, rax
     mov [rsp+\I0],r11
 
     mov r11,[rsp+\I1]
-    mulx rcx, rax, [rip + uintbig_p + 8]
+    mulx rcx, rax, [rip + .uintbig_p_local + 8]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I1],r11
 
     mov r11,[rsp+\I2]
-    mulx rbx, rax, [rip + uintbig_p + 16]
+    mulx rbx, rax, [rip + .uintbig_p_local + 16]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I2],r11
 
     mov r11,[rsp+\I3]
-    mulx rcx, rax, [rip + uintbig_p + 24]
+    mulx rcx, rax, [rip + .uintbig_p_local + 24]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I3],r11
 
     mov r11,[rsp+\I4]
-    mulx rbx, rax, [rip + uintbig_p + 32]
+    mulx rbx, rax, [rip + .uintbig_p_local + 32]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I4],r11
 
     mov r11,[rsp+\I5]
-    mulx rcx, rax, [rip + uintbig_p + 40]
+    mulx rcx, rax, [rip + .uintbig_p_local + 40]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I5],r11
 
     mov r11,[rsp+\I6]
-    mulx rbx, rax, [rip + uintbig_p + 48]
+    mulx rbx, rax, [rip + .uintbig_p_local + 48]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I6],r11
 
     mov r11,[rsp+\I7]
-    mulx rcx, rax, [rip + uintbig_p + 56]
+    mulx rcx, rax, [rip + .uintbig_p_local + 56]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I7],r11
 
     mov r11,[rsp+\I8]
-    mulx rbx, rax, [rip + uintbig_p + 64]
+    mulx rbx, rax, [rip + .uintbig_p_local + 64]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I8],r11
 
     mov r11,[rsp+\I9]
-    mulx rcx, rax, [rip + uintbig_p + 72]
+    mulx rcx, rax, [rip + .uintbig_p_local + 72]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I9],r11
 
     mov r11,[rsp+\I10]
-    mulx rbx, rax, [rip + uintbig_p + 80]
+    mulx rbx, rax, [rip + .uintbig_p_local + 80]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I10],r11
 
     mov r11,[rsp+\I11]
-    mulx rcx, rax, [rip + uintbig_p + 88]
+    mulx rcx, rax, [rip + .uintbig_p_local + 88]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I11],r11
 
     mov r11,[rsp+\I12]
-    mulx rbx, rax, [rip + uintbig_p + 96]
+    mulx rbx, rax, [rip + .uintbig_p_local + 96]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I12],r11
 
     mov r11,[rsp+\I13]
-    mulx rcx, rax, [rip + uintbig_p + 104]
+    mulx rcx, rax, [rip + .uintbig_p_local + 104]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I13],r11
 
     mov r11,[rsp+\I14]
-    mulx rbx, rax, [rip + uintbig_p + 112]
+    mulx rbx, rax, [rip + .uintbig_p_local + 112]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I14],r11
 
     mov r11,[rsp+\I15]
-    mulx rcx, rax, [rip + uintbig_p + 120]
+    mulx rcx, rax, [rip + .uintbig_p_local + 120]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I15],r11
 
     mov r11,[rsp+\I16]
-    mulx rbx, rax, [rip + uintbig_p + 128]
+    mulx rbx, rax, [rip + .uintbig_p_local + 128]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I16],r11
 
     mov r11,[rsp+\I17]
-    mulx rcx, rax, [rip + uintbig_p + 136]
+    mulx rcx, rax, [rip + .uintbig_p_local + 136]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I17],r11
 
     mov r11,[rsp+\I18]
-    mulx rbx, rax, [rip + uintbig_p + 144]
+    mulx rbx, rax, [rip + .uintbig_p_local + 144]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I18],r11
 
     mov r11,[rsp+\I19]
-    mulx rcx, rax, [rip + uintbig_p + 152]
+    mulx rcx, rax, [rip + .uintbig_p_local + 152]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I19],r11
 
     mov r11,[rsp+\I20]
-    mulx rbx, rax, [rip + uintbig_p + 160]
+    mulx rbx, rax, [rip + .uintbig_p_local + 160]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I20],r11
 
     mov r11,[rsp+\I21]
-    mulx rcx, rax, [rip + uintbig_p + 168]
+    mulx rcx, rax, [rip + .uintbig_p_local + 168]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I21],r11
 
     mov r11,[rsp+\I22]
-    mulx rbx, rax, [rip + uintbig_p + 176]
+    mulx rbx, rax, [rip + .uintbig_p_local + 176]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I22],r11
 
     mov r11,[rsp+\I23]
-    mulx rcx, rax, [rip + uintbig_p + 184]
+    mulx rcx, rax, [rip + .uintbig_p_local + 184]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I23],r11
 
     mov r11,[rsp+\I24]
-    mulx rbx, rax, [rip + uintbig_p + 192]
+    mulx rbx, rax, [rip + .uintbig_p_local + 192]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I24],r11
 
     mov r11,[rsp+\I25]
-    mulx rcx, rax, [rip + uintbig_p + 200]
+    mulx rcx, rax, [rip + .uintbig_p_local + 200]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I25],r11
 
     mov r11,[rsp+\I26]
-    mulx rbx, rax, [rip + uintbig_p + 208]
+    mulx rbx, rax, [rip + .uintbig_p_local + 208]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I26],r11
 
     mov r11,[rsp+\I27]
-    mulx rcx, rax, [rip + uintbig_p + 216]
+    mulx rcx, rax, [rip + .uintbig_p_local + 216]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I27],r11
 
     mov r11,[rsp+\I28]
-    mulx rbx, rax, [rip + uintbig_p + 224]
+    mulx rbx, rax, [rip + .uintbig_p_local + 224]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I28],r11
 
     mov r11,[rsp+\I29]
-    mulx rcx, rax, [rip + uintbig_p + 232]
+    mulx rcx, rax, [rip + .uintbig_p_local + 232]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I29],r11
 
     mov r11,[rsp+\I30]
-    mulx rbx, rax, [rip + uintbig_p + 240]
+    mulx rbx, rax, [rip + .uintbig_p_local + 240]
     adcx r11, rcx
     adox r11, rax
     mov [rsp+\I30],r11
 
     mov r11,[rsp+\I31]
-    mulx rcx, rax, [rip + uintbig_p + 248]
+    mulx rcx, rax, [rip + .uintbig_p_local + 248]
     adcx r11, rbx
     adox r11, rax
     mov [rsp+\I31],r11
@@ -903,5 +922,6 @@ fp_sq1:
 fp_sq2:
     /* TODO implement optimized Montgomery squaring */
     mov rdx, rsi
-    addq [fp_sq_count+rip],1
+    movq rax, [rip + fp_sq_count@GOTPCREL]
+    addq [rax], 1
     jmp fp_mul3
