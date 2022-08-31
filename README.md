@@ -17,6 +17,10 @@ To build and install the shared library files:
     make libhighctidh.so
     sudo make install libhighctidh.so
 
+An example C program that can use any of the
+libhighctidh_{511,512,1024,2048}.so libraries is available in
+`example-ctidh.c`.
+
 More information about the Python bindings including installation instructions
 are available in the `README.python.md` file.
 
