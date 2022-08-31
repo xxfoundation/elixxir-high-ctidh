@@ -11,18 +11,26 @@ except ImportError:
 requirements = []
 
 data_files = [
-    ('lib/',
-        ['libhighctidh_511.so',
-         'libhighctidh_512.so',
-         'libhighctidh_1024.so',
-         'libhighctidh_2048.so']
-        )
-    ]
+    (
+        "lib/",
+        [
+            "libhighctidh_511.so",
+            "libhighctidh_512.so",
+            "libhighctidh_1024.so",
+            "libhighctidh_2048.so",
+        ],
+    )
+]
 
-if __name__ == '__main__':
-    setup(name='highctidh', version='2022.23.08', author='Jacob Appelbaum',
-            zip_safe=False, author_email='jacob@appelbaum.net',
-            data_files=data_files, include_package_data=True,
-            install_requires=requirements, cmdclass=dict(bdist_deb=bdist_deb,
-            sdist_dsc=sdist_dsc),)
-
+if __name__ == "__main__":
+    setup(
+        name="highctidh",
+        version="2022.23.08",
+        author="Jacob Appelbaum",
+        zip_safe=False,
+        author_email="jacob@appelbaum.net",
+        data_files=data_files,
+        include_package_data=True,
+        install_requires=requirements,
+        cmdclass=dict(bdist_deb=bdist_deb, sdist_dsc=sdist_dsc),
+    )
