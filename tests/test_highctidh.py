@@ -112,6 +112,36 @@ class TestHighCTIDH(unittest.TestCase):
         alice_blinded_public_key = ctidh511.blind(alice_blinding_factor, alice_public_key)
         self.assertEqual(bytes(alice_blinded_public_key), python_alice_blinding_output_511_vector)
 
+    def test_511_blinded_manual_static_csidh(self):
+        ctidh511 = ctidh(511)
+        alice_private_key = ctidh511.private_key_from_bytes(python_alice_sk_511_vector)
+        alice_public_key = ctidh511.derive_public_key(alice_private_key)
+        bob_private_key = ctidh511.private_key_from_bytes(python_bob_sk_511_vector)
+        bob_public_key = ctidh511.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh511.private_key_from_bytes(python_alice_blinding_factor_511_vector)
+        shared_key_a_0 = ctidh511.public_key()
+        shared_key_b_0 = ctidh511.public_key()
+        shared_key_a_1 = ctidh511.public_key()
+        shared_key_b_1 = ctidh511.public_key()
+        ctidh511.csidh(shared_key_a_0, bob_public_key, alice_private_key)
+        ctidh511.csidh(shared_key_a_1, shared_key_a_0, blinding_factor0)
+        ctidh511.csidh(shared_key_b_0, alice_public_key, bob_private_key)
+        ctidh511.csidh(shared_key_b_1, shared_key_b_0, blinding_factor0)
+        self.assertEqual(bytes(shared_key_a_1).hex(), bytes(shared_key_b_1).hex())
+
+    def test_511_blinded_manual_static_blind_dh(self):
+        ctidh511 = ctidh(511)
+        alice_private_key = ctidh511.private_key_from_bytes(python_alice_sk_511_vector)
+        alice_public_key = ctidh511.derive_public_key(alice_private_key)
+        bob_private_key = ctidh511.private_key_from_bytes(python_bob_sk_511_vector)
+        bob_public_key = ctidh511.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh511.private_key_from_bytes(python_alice_blinding_factor_511_vector)
+        x = ctidh511.blind_dh(blinding_factor0, alice_private_key, bob_public_key)
+        y = ctidh511.blind_dh(blinding_factor0, bob_private_key, alice_public_key)
+        self.assertEqual(bytes(x).hex(), bytes(y).hex())
+
     def test_511_failed_csidh(self):
         with self.assertRaises(CSIDHError):
             ctidh511 = ctidh(511)
@@ -330,6 +360,36 @@ class TestHighCTIDH(unittest.TestCase):
         alice_blinded_public_key = ctidh512.blind(alice_blinding_factor, alice_public_key)
         self.assertEqual(bytes(alice_blinded_public_key), python_alice_blinding_output_512_vector)
 
+    def test_512_blinded_manual_static_csidh(self):
+        ctidh512 = ctidh(512)
+        alice_private_key = ctidh512.private_key_from_bytes(python_alice_sk_512_vector)
+        alice_public_key = ctidh512.derive_public_key(alice_private_key)
+        bob_private_key = ctidh512.private_key_from_bytes(python_bob_sk_512_vector)
+        bob_public_key = ctidh512.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh512.private_key_from_bytes(python_alice_blinding_factor_512_vector)
+        shared_key_a_0 = ctidh512.public_key()
+        shared_key_b_0 = ctidh512.public_key()
+        shared_key_a_1 = ctidh512.public_key()
+        shared_key_b_1 = ctidh512.public_key()
+        ctidh512.csidh(shared_key_a_0, bob_public_key, alice_private_key)
+        ctidh512.csidh(shared_key_a_1, shared_key_a_0, blinding_factor0)
+        ctidh512.csidh(shared_key_b_0, alice_public_key, bob_private_key)
+        ctidh512.csidh(shared_key_b_1, shared_key_b_0, blinding_factor0)
+        self.assertEqual(bytes(shared_key_a_1).hex(), bytes(shared_key_b_1).hex())
+
+    def test_512_blinded_manual_static_blind_dh(self):
+        ctidh512 = ctidh(512)
+        alice_private_key = ctidh512.private_key_from_bytes(python_alice_sk_512_vector)
+        alice_public_key = ctidh512.derive_public_key(alice_private_key)
+        bob_private_key = ctidh512.private_key_from_bytes(python_bob_sk_512_vector)
+        bob_public_key = ctidh512.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh512.private_key_from_bytes(python_alice_blinding_factor_512_vector)
+        x = ctidh512.blind_dh(blinding_factor0, alice_private_key, bob_public_key)
+        y = ctidh512.blind_dh(blinding_factor0, bob_private_key, alice_public_key)
+        self.assertEqual(bytes(x).hex(), bytes(y).hex())
+
     def test_512_base_len(self):
         ctidh512 = ctidh(512)
         base = ctidh512.public_key()
@@ -462,6 +522,36 @@ class TestHighCTIDH(unittest.TestCase):
         alice_blinded_public_key = ctidh1024.blind(alice_blinding_factor, alice_public_key)
         self.assertEqual(bytes(alice_blinded_public_key), python_alice_blinding_output_1024_vector)
 
+    def test_1024_blinded_manual_static_csidh(self):
+        ctidh1024 = ctidh(1024)
+        alice_private_key = ctidh1024.private_key_from_bytes(python_alice_sk_1024_vector)
+        alice_public_key = ctidh1024.derive_public_key(alice_private_key)
+        bob_private_key = ctidh1024.private_key_from_bytes(python_bob_sk_1024_vector)
+        bob_public_key = ctidh1024.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh1024.private_key_from_bytes(python_alice_blinding_factor_1024_vector)
+        shared_key_a_0 = ctidh1024.public_key()
+        shared_key_b_0 = ctidh1024.public_key()
+        shared_key_a_1 = ctidh1024.public_key()
+        shared_key_b_1 = ctidh1024.public_key()
+        ctidh1024.csidh(shared_key_a_0, bob_public_key, alice_private_key)
+        ctidh1024.csidh(shared_key_a_1, shared_key_a_0, blinding_factor0)
+        ctidh1024.csidh(shared_key_b_0, alice_public_key, bob_private_key)
+        ctidh1024.csidh(shared_key_b_1, shared_key_b_0, blinding_factor0)
+        self.assertEqual(bytes(shared_key_a_1).hex(), bytes(shared_key_b_1).hex())
+
+    def test_1024_blinded_manual_static_blind_dh(self):
+        ctidh1024 = ctidh(1024)
+        alice_private_key = ctidh1024.private_key_from_bytes(python_alice_sk_1024_vector)
+        alice_public_key = ctidh1024.derive_public_key(alice_private_key)
+        bob_private_key = ctidh1024.private_key_from_bytes(python_bob_sk_1024_vector)
+        bob_public_key = ctidh1024.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh1024.private_key_from_bytes(python_alice_blinding_factor_1024_vector)
+        x = ctidh1024.blind_dh(blinding_factor0, alice_private_key, bob_public_key)
+        y = ctidh1024.blind_dh(blinding_factor0, bob_private_key, alice_public_key)
+        self.assertEqual(bytes(x).hex(), bytes(y).hex())
+
     def test_1024_base_len(self):
         ctidh1024 = ctidh(1024)
         base = ctidh1024.public_key()
@@ -593,6 +683,36 @@ class TestHighCTIDH(unittest.TestCase):
         alice_blinding_factor = ctidh2048.private_key_from_bytes(python_alice_blinding_factor_2048_vector)
         alice_blinded_public_key = ctidh2048.blind(alice_blinding_factor, alice_public_key)
         self.assertEqual(bytes(alice_blinded_public_key), python_alice_blinding_output_2048_vector)
+
+    def test_2048_blinded_manual_static_csidh(self):
+        ctidh2048 = ctidh(2048)
+        alice_private_key = ctidh2048.private_key_from_bytes(python_alice_sk_2048_vector)
+        alice_public_key = ctidh2048.derive_public_key(alice_private_key)
+        bob_private_key = ctidh2048.private_key_from_bytes(python_bob_sk_2048_vector)
+        bob_public_key = ctidh2048.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh2048.private_key_from_bytes(python_alice_blinding_factor_2048_vector)
+        shared_key_a_0 = ctidh2048.public_key()
+        shared_key_b_0 = ctidh2048.public_key()
+        shared_key_a_1 = ctidh2048.public_key()
+        shared_key_b_1 = ctidh2048.public_key()
+        ctidh2048.csidh(shared_key_a_0, bob_public_key, alice_private_key)
+        ctidh2048.csidh(shared_key_a_1, shared_key_a_0, blinding_factor0)
+        ctidh2048.csidh(shared_key_b_0, alice_public_key, bob_private_key)
+        ctidh2048.csidh(shared_key_b_1, shared_key_b_0, blinding_factor0)
+        self.assertEqual(bytes(shared_key_a_1).hex(), bytes(shared_key_b_1).hex())
+
+    def test_2048_blinded_manual_static_blind_dh(self):
+        ctidh2048 = ctidh(2048)
+        alice_private_key = ctidh2048.private_key_from_bytes(python_alice_sk_2048_vector)
+        alice_public_key = ctidh2048.derive_public_key(alice_private_key)
+        bob_private_key = ctidh2048.private_key_from_bytes(python_bob_sk_2048_vector)
+        bob_public_key = ctidh2048.derive_public_key(bob_private_key)
+        # This is a shared key that is shared between alice and bob out of band
+        blinding_factor0 = ctidh2048.private_key_from_bytes(python_alice_blinding_factor_2048_vector)
+        x = ctidh2048.blind_dh(blinding_factor0, alice_private_key, bob_public_key)
+        y = ctidh2048.blind_dh(blinding_factor0, bob_private_key, alice_public_key)
+        self.assertEqual(bytes(x).hex(), bytes(y).hex())
 
     def test_2048_base_len(self):
         ctidh2048 = ctidh(2048)

@@ -125,3 +125,23 @@ class ctidh(object):
         blinded_key = self.public_key()
         self.csidh(blinded_key, pk, blinding_factor)
         return blinded_key
+    def blind_dh(self, blind, sk, pk):
+        """
+        This is a Diffie-Hellman function for use with blinding factors. This
+        is a specialized function that should only be use with very specific
+        cryptographic protocols such as those using the sphinx packet format.
+        It takes a blinding factor *blind* that is a private_key() object, a
+        second secret key *sk* that is a private_key() object, a public key
+        *pk* that is a public_key() object, and it computes a random element.
+        The returned value is a public_key() object. This function is suitable
+        for use with a shared blinding factor, and the eventual secret returned
+        should be made into a uniformly random bit string by the caller unless
+        it is used in a protocol that requires the use of the random element.
+        """
+        shared_key = self.public_key()
+        blinded_result = self.public_key()
+        if self.csidh(shared_key, pk, sk):
+           self.csidh(blinded_result, shared_key, blind)
+           return blinded_result
+        else:
+            raise CSIDHError
