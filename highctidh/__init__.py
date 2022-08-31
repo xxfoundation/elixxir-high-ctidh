@@ -17,6 +17,10 @@ class CSIDHError(Exception):
     """ Raised when csidh() fails to return True. """
     pass
 
+class LibraryNotFound(Exception):
+    """ Raised when the shared library cannot be located and opened. """
+    pass
+
 class ctidh(object):
     def __init__(self, field_size):
         self._ctidh_sizes = (511, 512, 1024, 2048)
@@ -44,7 +48,11 @@ class ctidh(object):
             _fields_ = [ ('A', ctypes.c_ubyte * self.pk_size) ]
         self.public_key = public_key
         self.base = self.public_key()
-        self._lib = ctypes.CDLL(ctypes.util.find_library('highctidh_' + str(self.field_size)))
+        try:
+            self._lib = ctypes.CDLL(ctypes.util.find_library('highctidh_' + str(self.field_size)))
+        except OSError as e:
+            print('Unable to load highctidh_' + str(self.field_size) + '.so'.format(e))
+            raise LibraryNotFound
         csidh_private = self._lib.__getattr__('highctidh_'+str(self.field_size)+'_csidh_private')
         csidh_private.restype = None
         csidh_private.argtypes = [ctypes.POINTER(self.private_key)]
