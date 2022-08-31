@@ -1188,6 +1188,8 @@ with open(fn+'.tmp','w') as f:
 
   f.write('\n\nDESTDIR ?= /usr/local\n')
   f.write('install:\n')
+  f.write('\t\t-mkdir $(DESTDIR)/include/libhighctidh/\n')
+  f.write('\t\tinstall -v *.h $(DESTDIR)/include/libhighctidh/\n')
   f.write('\t\tinstall -v libhighctidh_*.so $(DESTDIR)/lib/\n')
 
   f.write('\n\nclean:\n')

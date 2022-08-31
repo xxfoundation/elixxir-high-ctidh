@@ -795,6 +795,8 @@ libhighctidh.so: libhighctidh_511.so libhighctidh_512.so libhighctidh_1024.so li
 
 DESTDIR ?= /usr/local
 install:
+		-mkdir $(DESTDIR)/include/libhighctidh/
+		install -v *.h $(DESTDIR)/include/libhighctidh/
 		install -v libhighctidh_*.so $(DESTDIR)/lib/
 
 
