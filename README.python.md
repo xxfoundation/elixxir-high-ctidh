@@ -1,6 +1,6 @@
 Run the unit tests:
 
-   python3 -m unittest -v
+    python3 -m unittest -v
 
 Build and install the shared library, and then build and install the Python
 module:
@@ -24,13 +24,15 @@ Use the Python module:
     >>> import highctidh
     >>> ctidh = highctidh.ctidh(512) # options are 511, 512, 1024, 2048
 
-See tests/test_highctidh.py for example Python module usage.
+See `tests/test_highctidh.py` for example Python module usage.
 
 To build a Debian package that includes the Python module and the relevant .so
 files, run:
 
     python3 setup.py bdist_deb
 
-To build an x86_64 wheel:
+To build an `x86_64` wheel:
 
-   python setup.py bdist_wheel --plat-name x86_64
+    python setup.py bdist_wheel --plat-name x86_64
+
+Future releases may be installable from pypi.
