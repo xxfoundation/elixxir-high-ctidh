@@ -1,3 +1,27 @@
+This is an unofficial fork of high-ctidh.
+
+This fork enhances high-ctidh with additional Makefile targets including
+building high-ctidh as four shared libraries, one for each key size of 511,
+512, 1024, 2048. Python bindings are additionally added, as well as optional
+Debian packaging of both the shared library object files and the Python module.
+The Python bindings were made in concert with the author of the highctidh
+ctidh_cgo Golang bindings. Both bindings were built around the same shared
+objects for cross verification purposes. Currently this library is only
+functional on the `x86_64` CPU architecture as described below in greater
+detail.
+
+To build and install the shared library files:
+
+    ./autogen
+    make libhighctidh.so
+    sudo make install libhighctidh.so
+
+More information about the Python bindings including installation instructions
+are available in the `README.python.md` file.
+
+The original authors of this software released high-ctidh in the public domain.
+All contributions made in this fork are also in the public domain.
+
 Prerequisites: Intel or AMD CPU with `adcx`/`adox`: i.e., Broadwell,
 Skylake, or newer. Linux with standard development tools plus `clang`
 plus `valgrind`.
@@ -78,6 +102,3 @@ For various size-511 microbenchmarks:
 To select other CSIDH sizes and other CTIDH parameters (subject to
 various undocumented restrictions), edit the table at the top of
 `autogen` and run "`./autogen; make`".
-
-Basic Python bindings are available and more information is available in
-`README.python.md`.
