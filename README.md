@@ -5,9 +5,10 @@ building high-ctidh as four shared libraries, one for each key size of 511,
 512, 1024, 2048. Python bindings are additionally added, as well as optional
 Debian packaging of both the shared library object files and the Python module.
 The Python bindings were made in concert with the author of the highctidh
-ctidh_cgo Golang bindings. Both bindings were built around the same shared
-objects for cross verification purposes. Currently this library is only
-functional on the `x86_64` CPU architecture as described below in greater
+`ctidh_cgo` Golang bindings available at
+https://git.xx.network/elixxir/ctidh_cgo/. Both bindings were built around the
+same shared objects for cross verification purposes. Currently this library is
+only functional on the `x86_64` CPU architecture as described below in greater
 detail.
 
 To build and install the shared library files:
