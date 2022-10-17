@@ -25,7 +25,7 @@ data_files = [
 if __name__ == "__main__":
     setup(
         name="highctidh",
-        version="2022.31.08",
+        version="2022.10.17",
         author="Jacob Appelbaum",
         zip_safe=False,
         author_email="jacob@appelbaum.net",

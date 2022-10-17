@@ -5,12 +5,13 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "annotations.h"
 
 #define UINTBIG_LIMBS ((BITS+63)/64)
 
 typedef struct uintbig {
     uint64_t c[UINTBIG_LIMBS];
-} uintbig;
+} uintbig __attribute__((aligned(32)));
 
 extern const uintbig uintbig_p;
 extern const uintbig uintbig_1;
@@ -20,12 +21,13 @@ void uintbig_set(uintbig *x, uint64_t y);
 
 long long uintbig_bit(uintbig const *x, uint64_t k);
 
-long long uintbig_add3(uintbig *x, uintbig const *y, uintbig const *z); /* returns carry */
-long long uintbig_sub3(uintbig *x, uintbig const *y, uintbig const *z); /* returns borrow */
+long long uintbig_add3(uintbig *const x, uintbig const *const y, uintbig const *const z); /* returns carry */
+long long uintbig_sub3(uintbig *const x, uintbig const *const y, uintbig const *const z); /* returns borrow */
 
-void uintbig_mul3_64(uintbig *x, uintbig const *y, uint64_t z);
+void ATTR_INITIALIZE_1st
+uintbig_mul3_64(uintbig *const x, uintbig const *const y, const uint64_t z);
 
-static inline long long uintbig_bits_vartime(const uintbig *x)
+static inline long long uintbig_bits_vartime(const uintbig *const x)
 {
   long long result = BITS;
   while (result > 0 && !uintbig_bit(x,result-1)) --result;
@@ -45,7 +47,7 @@ static inline long long uintbig_uint64_iszero(uint64_t t)
   return 1-(long long) t;
 }
 
-static inline long long uintbig_iszero(const uintbig *x)
+static inline long long uintbig_iszero(const uintbig *const x)
 {
   uint64_t t = 0;
   for (long long i = 0;i < UINTBIG_LIMBS;++i)
@@ -53,7 +55,7 @@ static inline long long uintbig_iszero(const uintbig *x)
   return uintbig_uint64_iszero(t);
 }
 
-static inline long long uintbig_isequal(const uintbig *x,const uintbig *y)
+static inline long long uintbig_isequal(const uintbig *const x,const uintbig *const y)
 {
   uint64_t t = 0;
   for (long long i = 0;i < UINTBIG_LIMBS;++i)

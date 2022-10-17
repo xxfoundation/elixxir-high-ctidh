@@ -7,7 +7,17 @@
 #include "int32_sort.h"
 #include "int32mask.h"
 
-void random_boundedl1(int8_t *e,const long long w,const long long S)
+void
+ctidh_fillrandom_default(
+  void *const outptr,
+  const size_t outsz,
+  const uintptr_t context)
+{
+  (void) context;
+  randombytes(outptr, outsz);
+}
+
+void random_boundedl1(int8_t *e,const long long w,const long long S, ctidh_fillrandom rng_callback)
 {
   // standard correspondences:
   // e[0],e[1],...,e[w-1] are w nonnegative integers
@@ -33,7 +43,7 @@ void random_boundedl1(int8_t *e,const long long w,const long long S)
   int32_t r[254];
 
   for (;;) { /* rejection-sampling loop */
-    randombytes(r,4*rnum);
+    rng_callback(r,4*rnum, (uintptr_t) e);
     for (long long j = 0;j < rnum;++j) r[j] &= ~1;
     for (long long j = 0;j < w;++j) r[j] |= 1;
     int32_sort(r,rnum);
@@ -82,7 +92,7 @@ void random_boundedl1(int8_t *e,const long long w,const long long S)
     // and, if negative, flip coin for each zero bit
     long long counter = w-S;
 
-    randombytes(r,4*((w+31)/32));
+    rng_callback(r,4*((w+31)/32), (uintptr_t) e);
     long long reject = 0;
     for (long long i = 0;i < w;++i) {
       int32_t rbit = 1&(r[i/32]>>(i&31));

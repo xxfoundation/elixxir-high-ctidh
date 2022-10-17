@@ -2,10 +2,19 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <endian.h>
 #include "steps.h"
 #include "elligator.h"
 #include "csidh.h"
 #include "primes.h"
+
+#define dump_uintbig(X) {for (size_t i=0; i<sizeof((X).c)/sizeof((X).c[0]);i++) { printf("%#lxU, ", htole64((X).c[i])); };printf("\n"); }
+#define assert_uintbig_eq(X,Y) { \
+	for (size_t i = 0; i<sizeof(X.c)/sizeof(X.c[0]); i++) { \
+	if (X.c[i] != Y.c[i]) { \
+	dump_uintbig(X); \
+	dump_uintbig(Y); \
+	assert(0);}}}
 
 static void test_iszero(void)
 {
@@ -31,6 +40,74 @@ static void test_iszero(void)
   }
 }
 
+static void
+test_uintbig_bit(void)
+{
+	printf("uintbig_bit\n");
+	fflush(stdout);
+
+	assert(uintbig_bit(&uintbig_1, 0));
+	for (size_t i=1;i<sizeof(uintbig_1)/sizeof(uintbig_1.c[0]); i++) {
+		assert(!uintbig_bit(&uintbig_1, i));
+	}
+
+	uintbig x = {0};
+	for (size_t i=0;i<sizeof(x)/sizeof(x.c[0]); i++) {
+		assert(!uintbig_bit(&x, i));
+	}
+	uintbig_set(&x, 13); // 0b 1101
+	assert( uintbig_bit(&x,0));
+	assert(!uintbig_bit(&x,1));
+	assert( uintbig_bit(&x,2));
+	assert( uintbig_bit(&x,3));
+	assert(!uintbig_bit(&x,4));
+	assert(4 == uintbig_bits_vartime(&x));
+
+	printf("uintbig_set\n"); fflush(stdout);
+	x.c[1] = 2ULL;
+	assert(66 == uintbig_bits_vartime(&x));
+	x.c[7] = -1ULL;
+    if (BITS >= 512) {
+        assert(512 == uintbig_bits_vartime(&x));
+    }
+	uintbig_set(&x, 5ULL);
+	assert(3 == uintbig_bits_vartime(&x));
+}
+
+void
+test_uintbig_mul3_64(void)
+{
+	printf("uintbig_mul3_64\n"); fflush(stdout);
+	uintbig x = uintbig_1;
+	uintbig o = {0};
+	uintbig_mul3_64(&x, &x, 2); // x := x*2 = 1*2
+	assert(x.c[0] == 2);
+	uintbig_mul3_64(&o, &x, -1ULL); // o := x * fff.. = 2 * fff.. = 1ff..fe
+	assert(o.c[0] == (-1ULL) << 1);
+	assert(o.c[1] == 1); // should be equivalent to shifting fff.. by 1 bit
+	uintbig_mul3_64(&x, &o, -1ULL); // x := 1ff..fe * fff... = 0x1fffffffffffffffc0000000000000002
+	assert(x.c[0] == 2);
+	assert(x.c[1] == 0xfffffffffffffffc);
+	assert(x.c[2] == 0x1);
+	uintbig_mul3_64(&x, &x, 10);    // x := x * 10 = 0x13 ffffffffffffffd8 0000000000000014
+	assert(x.c[0] == 0x14);
+	assert(x.c[1] == 0xffffffffffffffd8ULL);
+	assert(x.c[2] == 0x13);
+	uintbig_mul3_64(&x, &x, 2); // x := 0x27ffffffffffffffb00000000000000028
+	assert(x.c[0] == 0x14 * 2);
+	assert(x.c[1] == 0xffffffffffffffd8ULL * 2);
+	assert(x.c[2] == 0x13 * 2 + 1); // +1 from the carry
+	x = uintbig_1;
+	assert(1 == uintbig_bits_vartime(&x));
+    if (BITS >= 512) {
+        for (size_t i = 0; i < sizeof(x.c)/sizeof(x.c[0]); i++) {
+            uintbig_mul3_64(&x, &x, -1ULL);
+            // check that it occupies all the bits:
+            assert(sizeof(x.c[0])*8*(i+1) == (size_t)uintbig_bits_vartime(&x));
+        }
+    }
+}
+
 static void test_sqrt(void)
 {
   printf("fp_sqrt\n");
@@ -49,6 +126,286 @@ static void test_sqrt(void)
     assert(fp_sqrt(&x2));
     assert(!fp_sqrt(&x2neg));
   }
+}
+
+static char test_fillrandom_buf[16384] = {0};
+
+static void
+test_fillrandom_impl_looping(void *const out, const size_t outsz,
+    uintptr_t context)
+{
+	(void) context;
+	size_t written = 0;
+	while (written < outsz) {
+		*((char*)out+written) =
+		    ((uintptr_t)context)
+		    ^
+		    (test_fillrandom_buf[written % sizeof(test_fillrandom_buf)]);
+		written++;
+	}
+}
+
+static struct context_list {
+	uintptr_t ctx;
+	uint64_t state;
+	struct context_list *next;
+} test_fillrandom_context_list;
+
+static void
+test_fillrandom_context_list_reset()
+{
+	struct context_list *current = &test_fillrandom_context_list;
+	while(current) {
+		current->state = (uintptr_t) current->ctx;
+		current = current->next;
+	}
+}
+
+static uint64_t
+test_fillrandom_hash(uint64_t oldhash, char *outptr, size_t outsz)
+{
+	/* modified djb hash, endian-independent, NOT a safe CSPRNG: */
+	assert(outsz % 4 == 0);
+	uint64_t hash = oldhash;
+	int32_t *wptr = (int32_t*) outptr;
+	for(size_t i = 0; i < outsz; i+=4)
+	{
+		hash = ((hash << 5) + oldhash + hash) + (hash>>8);
+		*wptr++ = (int32_t)hash;
+	}
+	return hash;
+}
+
+static uint64_t test_fillrandom_global_hash = 0;
+
+static void
+test_fillrandom_impl_global(void *const out, const size_t outsz,
+    const uintptr_t context)
+{
+	(void) context;
+	test_fillrandom_global_hash += test_fillrandom_hash(
+		test_fillrandom_global_hash, out, outsz);
+}
+
+static void
+test_fillrandom_impl_contextaware(void *const out, const size_t outsz,
+    const uintptr_t context)
+{
+	struct context_list *current = &test_fillrandom_context_list;
+	while (current) {
+		if (current->ctx == context) break; /* found */
+		if (!current->next) {
+			current->next = malloc(sizeof(struct context_list));
+			current->next->ctx = context;
+			current->next->state = (uintptr_t) context;
+			current->next->next = NULL;
+		}
+		current = current->next;
+	}
+	assert(current);
+
+	current->state += test_fillrandom_hash(current->state, out, outsz);
+}
+
+static void
+test_fillrandom(void)
+{
+	printf("fillrandom\n"); fflush(stdout);
+	uint8_t r1[8];
+	typeof(r1) r2;
+	ctidh_fillrandom_default(&r1, sizeof(r1), 0);
+	memcpy(r2, r1, sizeof(r2));
+	assert(0 == memcmp(r1, r2, sizeof(r1)));
+
+	/* equal when context is re-used */
+	test_fillrandom_impl_looping(&r1, sizeof(r1), (uintptr_t)&r1);
+	test_fillrandom_impl_looping(&r2, sizeof(r2), (uintptr_t)&r1);
+	assert(0 == memcmp(r1, r2, sizeof(r1)));
+
+	/* not equal when context is not reused: */
+	test_fillrandom_impl_looping(&r1, sizeof(r1), (uintptr_t)&r1);
+	test_fillrandom_impl_looping(&r2, sizeof(r2), (uintptr_t)&r2);
+	assert(0 != memcmp(r1, r2, sizeof(r1)));
+
+	memcpy(r2, r1, sizeof(r2));
+	assert(0 == memcmp(r1, r2, sizeof(r1)));
+	ctidh_fillrandom_default(&r1, sizeof(r1), 0);
+	assert(0 != memcmp(r1, r2, sizeof(r1))); // returns different result
+
+	/* our mock rng is deterministic with NULL context: */
+	randombytes(test_fillrandom_buf, sizeof(test_fillrandom_buf));
+	test_fillrandom_impl_looping(r1, sizeof(r1), 0);
+	test_fillrandom_impl_looping(r2, sizeof(r2), 0);
+	assert(0 == memcmp(r1, r2, sizeof(r1)));
+
+	/* ctidh_private_withrng with default rng works: */
+	private_key priv1 = {0};
+	private_key priv2 = {0};
+	assert(0 == memcmp(&priv1.e, &priv2.e, sizeof(priv1.e)));
+	csidh_private_withrng(&priv1, ctidh_fillrandom_default);
+	csidh_private_withrng(&priv2, ctidh_fillrandom_default);
+	assert(0 != memcmp(&priv1.e, &priv2.e, sizeof(priv1.e)));
+
+	/* ctidh_private with default rng works: */
+	private_key priv3 = {0};
+	private_key priv4 = {0};
+	assert(0 == memcmp(&priv3.e, &priv4.e, sizeof(priv3.e)));
+	csidh_private(&priv3);
+	csidh_private(&priv4);
+	assert(0 != memcmp(&priv3.e, &priv4.e, sizeof(priv3.e)));
+
+	/* ctidh_private_withrng with context-aware rng works: */
+	private_key priv5 = {0};
+	private_key priv6 = {0};
+	assert(0 == memcmp(&priv5.e, &priv6.e, sizeof(priv5.e)));
+	csidh_private_withrng(&priv5, test_fillrandom_impl_contextaware);
+	csidh_private_withrng(&priv6, test_fillrandom_impl_contextaware);
+	assert(0 != memcmp(&priv5.e, &priv6.e, sizeof(priv5.e)));
+	private_key priv7 = priv5;
+	assert(0 == memcmp(&priv7.e, &priv5.e, sizeof(priv5.e)));
+	/* same context, after reset, results in same key: */
+	test_fillrandom_context_list_reset();
+	csidh_private_withrng(&priv5, test_fillrandom_impl_contextaware);
+	assert(0 == memcmp(&priv7.e, &priv5.e, sizeof(priv5.e)));
+	assert(0 != memcmp(&priv7.e, &priv6.e, sizeof(priv5.e)));
+	/* different context, after reset, results in different key: */
+	test_fillrandom_context_list_reset();
+	csidh_private_withrng(&priv6, test_fillrandom_impl_contextaware);
+	assert(0 != memcmp(&priv7.e, &priv6.e, sizeof(priv5.e)));
+
+	/* deterministic keygen using global hash state: */
+	private_key priv_gh1 = {0};
+	private_key priv_gh2 = {0};
+	private_key priv_gh3 = {0};
+	private_key priv_gh4 = {0};
+	private_key priv_gh5 = {0};
+	private_key priv_gh6 = {0};
+	test_fillrandom_global_hash = 0x123U;
+	csidh_private_withrng(&priv_gh1, test_fillrandom_impl_global);
+	test_fillrandom_global_hash = 0x123U;
+	csidh_private_withrng(&priv_gh2, test_fillrandom_impl_global); /* same seed */
+	csidh_private_withrng(&priv_gh3, test_fillrandom_impl_global); /* gh2 != gh3 */
+	assert(0 == memcmp(&priv_gh1, &priv_gh2, sizeof(priv_gh1)));
+	assert(0 != memcmp(&priv_gh1, &priv_gh3, sizeof(priv_gh1)));
+	test_fillrandom_global_hash = 0x5432167890abcU;
+	csidh_private_withrng(&priv_gh4, test_fillrandom_impl_global);
+	csidh_private_withrng(&priv_gh5, test_fillrandom_impl_global);
+	assert(0 != memcmp(&priv_gh4, &priv_gh1, sizeof(priv_gh4)));// diff seed
+	assert(0 != memcmp(&priv_gh4, &priv_gh2, sizeof(priv_gh4)));
+	assert(0 != memcmp(&priv_gh4, &priv_gh3, sizeof(priv_gh4)));
+	assert(0 != memcmp(&priv_gh4, &priv_gh5, sizeof(priv_gh4)));
+	test_fillrandom_global_hash = 0x5432167890abcU;
+	csidh_private_withrng(&priv_gh6, test_fillrandom_impl_global);
+	assert(0 == memcmp(&priv_gh4, &priv_gh6, sizeof(priv_gh4)));// same seed
+
+}
+static void
+test_deterministic_keygen()
+{
+	printf("deterministic_keygen\n"); fflush(stdout);
+	private_key priv_gh1 = {0};
+	private_key priv_gh2 = {0};
+	private_key priv_gh3 = {0};
+	test_fillrandom_global_hash = 0x123456789abcdef0U;
+	csidh_private_withrng(&priv_gh1, test_fillrandom_impl_global);
+	test_fillrandom_global_hash = 0x123456789abcdef0U;
+	csidh_private_withrng(&priv_gh2, test_fillrandom_impl_global);
+	csidh_private_withrng(&priv_gh3, test_fillrandom_impl_global);
+	assert(0 == memcmp(&priv_gh1, &priv_gh2, sizeof(priv_gh1)));
+	assert(0 != memcmp(&priv_gh1, &priv_gh3, sizeof(priv_gh1)));
+#if 511 == BITS
+	char expected_gh1[] = "\x00\xff\x01\xf8\x00\x01\x04\x04\x01\x00\xff\x01\xfa\x01\xfe\x01\x05\xfd\xfd\x00\x01\xfe\x04\xfe\xfc\xff\x03\x00\xf9\x00\xfe\x00\x00\x01\x04\x03\x03\x00\xff\x02\xfc\xff\x00\x00\xff\x00\xff\xfc\x01\xfc\x02\x00\x00\x04\x00\x02\x01\x02\x00\x03\xfe\x00\x01\x00\x04\xff\x00\xff\xff\xfe\xff\x01\x00\xff";
+	char expected_gh3[] = "\x02\x03\x02\x00\x07\x00\xfe\xfd\xfb\x01\xff\x02\xfe\xfd\x00\xfd\xff\x01\x00\x01\xfe\x04\x00\x04\xff\xfe\xfb\x00\x05\x01\x04\x01\x01\x01\xff\xfc\xfa\x00\x00\xff\xfc\x00\x00\xfb\xfe\xfd\xfe\x00\xfb\x00\xfe\x00\x01\x02\x00\xfe\xfe\x02\x02\xff\x02\x00\xff\x02\xff\x00\x01\x01\x01\xff\x01\xff\x01\xff";
+#elif 512 == BITS
+	char expected_gh1[] = "\xff\xfd\x02\xfb\x00\x04\xff\xfe\x00\x01\xfc\x02\xfe\xfb\x00\x00\x01\x0b\x00\x01\xfc\x09\xfd\xff\x01\xfe\x03\xf7\xfe\xfe\x01\xfa\x01\x01\x04\x00\xf9\xfd\xff\xfc\x02\x00\x00\xfe\xfc\x00\x01\xff\x00\x04\x03\x01\xfd\x07\x01\xff\x01\x00\xfd\xfe\x00\x02\xfd\xff\x02\x02\x02\x05\x01\x00\xfd\x00\x00\x01";
+	char expected_gh3[] = "\x03\xfa\xf5\x02\x01\x01\xfa\xfd\x00\x05\xfc\x05\x00\xfd\x00\xfc\xfe\x08\x07\xfe\x05\xff\xfe\x01\x00\x06\x01\x01\x06\x01\xf9\x00\xfe\x00\x00\x03\x00\x03\xf9\xfe\x01\x03\xfe\x01\x01\xfc\x00\x03\x02\x00\x03\x00\x05\xfe\xfe\xfe\x01\xff\xfb\x01\x00\xff\xff\xfe\xfa\x01\x00\x01\xff\x03\xfc\xff\xfe\x00";
+#elif 1024 == BITS
+	char expected_gh1[] = "\x01\xff\x01\x01\x01\x03\x01\x00\xff\x00\xff\xfe\x00\x02\x04\x00\x01\xff\x00\x00\xff\x00\xff\x00\x01\xff\x02\x03\x01\x00\x00\x00\x01\xff\x00\x02\x01\xff\xff\x00\x00\x02\xfe\xff\xfb\x00\x01\x00\x00\x00\x00\x01\xff\xfe\x00\x00\x00\x01\x01\x00\x00\xff\xfe\xff\x00\xfd\x00\x00\xfe\x01\x00\x00\x00\x00\x04\x00\xfe\x00\x00\xfe\x00\xfe\x00\x02\x00\xff\x00\xfc\x00\x00\x00\x00\x01\x01\xff\x00\x00\x00\xff\x00\x02\x01\x01\x00\x00\x01\x01\x00\x00\xff\xff\x00\x02\x00\x00\x00\x00\x00\xff\x00\xff\xfe\x02\x00\x00\x01\x00\x00\x01\x00";
+	char expected_gh3[] = "\x00\x02\x01\x00\x02\xff\x00\xfd\x00\x01\x02\x01\x00\xfe\x00\xff\x02\x00\x01\xfe\xff\x03\x00\xfe\x00\x00\x00\x01\x01\x00\x01\xff\x01\x02\x01\x00\xfe\x00\x01\xff\xfd\x00\x01\x00\x01\xff\xff\xff\x00\xff\xff\x00\x00\xff\xff\xfd\x00\x01\xfd\x00\xff\x01\x00\xff\x00\x01\xff\x00\x00\x00\x04\xff\x00\xff\x01\x02\x01\x00\xff\x00\x00\xfe\x00\x00\x02\x00\x01\x00\x00\xfe\x00\x00\xff\x00\xfe\xfe\x01\x00\xff\x00\xff\x01\x02\x02\x00\x00\xff\x00\x00\x00\x00\x01\x01\x00\x00\x00\x02\x00\x01\x00\xff\x02\x00\x00\x00\x00\x00\x00\xfe\x00";
+#elif 2048 == BITS
+	char expected_gh1[] = "\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\xff\x00\xff\xff\x00\x00\x00\x00\x00\x01\x00\x01\x00\xff\x00\x00\x00\x00\xff\x00\x00\x01\xff\x00\x00\xfe\x00\x00\x00\x00\x00\x00\x00\xff\x00\xff\x00\x00\x00\x01\x00\x00\x01\x00\x00\x00\xff\x00\x00\xff\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\xfe\x00\x00\x00\x00\x01\x01\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\xff\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\xff\xff\x00\x01\x00\x01\x00\x00\xff\x00\x00\x00\xff\x00\x00\xff\x00\x00\x00\x00\x00\x01\xff\x00\x00\x01\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\xff\x00\x00\x01\x00\x00\x00\x00\x00\x00\xff\x00\x02\x00\xff\x00\x00\x00\x00\x01\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x01\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\xff\x00\x00";
+	char expected_gh3[] = "\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x02\x00\x00\x00\x01\xff\x00\x00\x00\x01\x00\xff\x00\x00\x00\x00\x00\x00\xfe\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xfe\x00\x00\x00\xff\x00\x00\x00\x00\x01\x00\x00\xff\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\xfe\x00\x00\x00\x00\x01\x00\x00\x00\x00\xff\x00\xff\x00\x00\x00\x01\x00\x00\xff\x00\x00\xff\x00\x01\x00\x00\xff\x00\x01\x00\xff\x00\xfe\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\xff\x00\x00\x00\x00\xff\x00\x01\x00\x00\x00\xff\x00\xff\x00\xff\x00\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\xff\x00\x00\x00\x00\x01\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\xff\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+#endif // BITS
+	if (0 != memcmp(&priv_gh1.e, &expected_gh1, sizeof(priv_gh1.e))) {
+		for(size_t i = 0; i < sizeof(priv_gh1.e)/sizeof(priv_gh1.e[0]); i++) {
+			printf("\\x%02hhx", priv_gh1.e[i]);
+		}printf("\n");
+		assert(0);
+	}
+	if (0 != memcmp(&priv_gh3.e, &expected_gh3, sizeof(priv_gh3.e))) {
+		for(size_t i = 0; i < sizeof(priv_gh3.e)/sizeof(priv_gh3.e[0]); i++) {
+			printf("\\x%02hhx", priv_gh3.e[i]);
+		}printf("\n");
+		assert(0);
+	}
+
+	/* known-answer test for public key derivation: */
+	public_key pub_gh1 = {0};
+	public_key pub_gh2 = {0};
+	public_key pub_gh3 = {0};
+	assert(1 == csidh(&pub_gh1, &base, &priv_gh1));
+	assert(1 == csidh(&pub_gh2, &base, &priv_gh2));
+	assert(1 == csidh(&pub_gh3, &base, &priv_gh3));
+	assert(0 == memcmp(&pub_gh1, &pub_gh2, sizeof(pub_gh1)));
+	assert(0 != memcmp(&pub_gh1, &pub_gh3, sizeof(pub_gh1)));
+	//dump_uintbig(pub_gh1.A.x);
+	//dump_uintbig(pub_gh3.A.x);
+#if 511 == BITS
+	uintbig expected_pub_gh1 ={{0xb61824684d4b9d2aU, 0xf09eddaaea9e4245U, 0x5bd2bcd2a72df32fU, 0xe62bd967a767f660U, 0x4e40c6d0f765865dU, 0x347441d14290232aU, 0x27c5e0bebeb6e03eU, 0x1307fb449ea00e28U}};
+	uintbig expected_pub_gh3 = {{0xe514fe7c2e1286e6U, 0x1ce5e4a70d3a6d81U, 0x8b9e923cbbe99b47U, 0x709fa5200c18e198U, 0xe2116c819aff0beeU, 0x1b8387afd644ca97U, 0x8afa9f58e4890e18U, 0x397dd8a2421bc30dU}};
+#elif 512 == BITS
+	uintbig expected_pub_gh1 ={{0x2f451b77cfe93fc8U, 0x5d14a7e94a6bf51bU, 0x1b9fe8bd58c2a1e2U, 0x924bd38ea0de359bU, 0xa10303d0f111864eU, 0x1256ba1137dfc882U, 0xcfda5f713f7ef7a7U, 0x3b21f906355ffde5U}};
+	uintbig expected_pub_gh3 = {{0xc3de1e9a0ce452eaU, 0x2c7f834207cfa321U, 0x51df39b2d45a52f7U, 0x6ce5234c0c96b630U, 0x5d73222e4f2c034bU, 0x904b4b9b9f5d8b54U, 0xfdf299a7dc08f21cU, 0x14f78a9cde33342eU}};
+#elif 1024 == BITS
+	uintbig expected_pub_gh1 ={{0x145a4fa93ff3473cU, 0x3f4f6d848078517cU, 0x54bd4b5260b98237U, 0x4385ba5b5880943aU, 0xa00d7a581add9491U, 0x607b0b25e32a0767U, 0x4ff219cf1e3b78bcU, 0xbb57d39d048d3941U, 0xa778914f32ea4c60U, 0xff150a8dbdc1ffb7U, 0x5f6e36be62ed8cbcU, 0x3f847d188b6b2f1aU, 0xfee36e770460ab3U, 0xace25b28b4fa79d0U, 0x5c48f2f5f18d3e89U, 0x1df39a760bffbbeU}};
+	uintbig expected_pub_gh3 = {{0x4999f9e76365f7b8U, 0x28fcde7eaddb3ecfU, 0x5e03424d4d458410U, 0xcc3095baaa51f010U, 0xfd2cc5c863a9ccd1U, 0xaf63cb97b7e9302bU, 0xa83b97ef56ee2f7aU, 0x6fc0d03b1c528643U, 0x424070484c4b7e01U, 0x26e1d849d6cb5025U, 0xc2822acaca0abcdeU, 0x72de377972cc49dbU, 0x70afbe77c427e919U, 0xa0416dc6f13b6733U, 0x3328508d4670521fU, 0xd2c91ffe09e4916U, 
+}};
+#elif 2048 == BITS
+	uintbig expected_pub_gh1 = {{0x800e67b0bc7bfd06U, 0x3bce48af8fb38f7eU, 0xf35b04d14f8d3822U, 0xdbd9c7ab897e9002U, 0x9d0632ba7d6422dU, 0xa430bf8309412c3aU, 0x287b134c7b93ef50U, 0xbc8750ecf09bdcd7U, 0x466bcb717f690adaU, 0x994a81a2cc2dcbeeU, 0xd02d8d4af1b5fe87U, 0xab609c45d4ef5c97U, 0xdd1654456c056fbU, 0x7a16750215bda5a1U, 0xa6cb44b15a09ce1U, 0x31cd404807d3ac3eU, 0x310023f9fa68bef5U, 0x7a05048b7952e891U, 0xb15888f8b7a441ecU, 0xc1830ce2018ac99fU, 0x9b9b2daa5ee2ba5U, 0xa17b9f5786813eadU, 0x9b51ac5fba38238dU, 0xe7caedf72d093b61U, 0x718d2d4b5df6a5dcU, 0x15339f1e604f8b87U, 0x8b45733c8a5d6dfbU, 0xd62d63a17956e30cU, 0x93a13fe8336be9c5U, 0x84ffd577f0611092U, 0xa5d20c27372ffba8U, 0x1405c6a16c6553cdU, }};
+	uintbig expected_pub_gh3 = {{0x486944aa1a228592U, 0xb9fd80f9b7999a42U, 0x494715c67f92a993U, 0x7a91cf86ddbc9b97U, 0x9f2a59d87c64a702U, 0xabdd79b97f1f09fbU, 0xa21e23bc2fc6501aU, 0x7877755adccdb64eU, 0xc1feb8acb842e1a7U, 0xe607db2a89ea6202U, 0xb06862730b72ff4fU, 0x25b9317e27622e98U, 0x16704fa976ac2827U, 0x65c2b263b28ef808U, 0xf788659a466b500bU, 0x6e72a5279be5db9fU, 0x8229bf4ac0634c32U, 0xde4cd3657e339e9U, 0x1c13a055f5421490U, 0x8c464347b0409ac0U, 0xb5f5cdd1ae02a855U, 0xcd836b96f35f1f3fU, 0x20becdc3af44b723U, 0x936db66fb4f90bc6U, 0x3254c4b8ff7c6e12U, 0x3aaf8ab2da5cae01U, 0x792b5a7cd4bf56faU, 0x110fbc3cf246d6ebU, 0xff60123491275202U, 0xf08d0713a53cd183U, 0xa2ea0dfe213c3c1cU, 0x21f1fb24e497b8beU, }};
+#endif /* BITS */
+	assert_uintbig_eq(pub_gh1.A.x, expected_pub_gh1);
+	assert_uintbig_eq(pub_gh3.A.x, expected_pub_gh3);
+}
+
+static void
+test_fp_sq2(void)
+{
+	printf("fp_sq2\n");
+	fflush(stdout);
+
+	fp x = fp_0;
+	fp_sq1(&x);
+	assert(fp_isequal(&x, &fp_0)); // 0^2 == 0
+
+	x = fp_1;
+	fp_sq1(&x);
+	fp_isequal(&x, &fp_1); // 1^2 == 1
+
+	for (int i = 0; i < 10000; i++) {
+		fp r;
+		fp_random(&r);
+		fp r_sq;
+		fp_sq2(&r_sq, &r);
+		fp r_mul_r;
+		fp_mul3(&r_mul_r, &r, &r);
+		assert(fp_isequal(&r_mul_r, &r_sq));
+	}
+	/*
+	 * test:
+	 *  pick (small) random x
+	 *  if fp_iszero(x):
+	 *    x_check := fp0
+	 *  if not fp_iszero(x):
+	 *    x_check := fp1
+	 *  x_count := x
+	 *  fp_sq2(x_sq, x) // x_sq := x*x
+	 *  while !fp_iszero(x_count):
+	 *    fp_sub2(x_count, fp1) // x_count := x_count - 1
+	 *    fp_mul2(x_check, x)   // x_check := x_check * x
+	 *  fp_isequal(x_sq, x_check)     // squaring is the same as repeated mult
+	 *
+	 */
 }
 
 // ----- validate_contribution -> validate_cutofforder_v0
@@ -71,7 +428,7 @@ static int validate_contribution(const fp *P,const fp *A,const long long i)
   for (long long j = 0;j < primes_num;++j)
     if (j != i)
       uintbig_mul3_64(&cofactor,&cofactor,primes[j]);
-  
+
   xMUL_vartime(&Q,&Aproj,1,&Pproj,&cofactor);
   if (fp_iszero(&Q.z)) return 0;
 
@@ -954,7 +1311,14 @@ static void test_nike(void)
 
 int main()
 {
+  printf("%i tests\n", BITS);
+  fflush(stdout);
   test_iszero();
+  test_uintbig_bit();
+  test_uintbig_mul3_64();
+  test_fillrandom();
+  test_deterministic_keygen();
+  test_fp_sq2();
   test_sqrt();
   test_dac();
   test_elligator();

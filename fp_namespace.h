@@ -1,3 +1,4 @@
+// fp*.S:
 #define fp_0 NAMESPACEBITS(fp_0)
 #define fp_1 NAMESPACEBITS(fp_1)
 #define fp_2 NAMESPACEBITS(fp_2)
@@ -15,5 +16,8 @@
 #define fp_sq_count NAMESPACEBITS(fp_sq_count)
 #define fp_sub2 NAMESPACEBITS(fp_sub2)
 #define fp_sub3 NAMESPACEBITS(fp_sub3)
+
+// fp_inv*.c:
 #define fp_inv NAMESPACEBITS(fp_inv)
+// fp_sqrt*.c:
 #define fp_sqrt NAMESPACEBITS(fp_sqrt)

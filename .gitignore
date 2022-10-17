@@ -1,0 +1,13 @@
+__pycache__/
+*/__pycache__/
+*.o
+*.pyc
+*/*.pyc
+*.so
+*.a
+*.swp
+test1024
+test2048
+test511
+test512
+testrandom

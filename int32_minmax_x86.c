@@ -1,4 +1,5 @@
-#define int32_MINMAX(a,b) \
+#if defined(__x86_64__)
+#define int32_MINMAX(a,b)			\
 do { \
   int32 temp1; \
   asm( \
@@ -11,3 +12,12 @@ do { \
     : "cc" \
   ); \
 } while(0)
+#else
+#include <stdint.h>
+#define int32_MINMAX(a,b) do { \
+  const register int32_t big = (a > b ? a : b); \
+  const register int32_t small = (a > b ? b : a); \
+  a = small; \
+  b = big; \
+} while (0);
+#endif
