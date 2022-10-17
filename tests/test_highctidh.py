@@ -225,6 +225,335 @@ class TestHighCTIDH(unittest.TestCase):
         with self.assertRaises(InvalidFieldSize):
             ctidh510 = ctidh(510)
 
+    def withrng_test_kat(self, field_size):
+        priv_gh1_kats = {
+            511: b"\x00\xff\x01\xf8\x00\x01\x04\x04\x01\x00\xff\x01\xfa\x01\xfe\x01\x05\xfd\xfd\x00\x01\xfe\x04\xfe\xfc\xff\x03\x00\xf9\x00\xfe\x00\x00\x01\x04\x03\x03\x00\xff\x02\xfc\xff\x00\x00\xff\x00\xff\xfc\x01\xfc\x02\x00\x00\x04\x00\x02\x01\x02\x00\x03\xfe\x00\x01\x00\x04\xff\x00\xff\xff\xfe\xff\x01\x00\xff",
+            512: b"\xff\xfd\x02\xfb\x00\x04\xff\xfe\x00\x01\xfc\x02\xfe\xfb\x00\x00\x01\x0b\x00\x01\xfc\x09\xfd\xff\x01\xfe\x03\xf7\xfe\xfe\x01\xfa\x01\x01\x04\x00\xf9\xfd\xff\xfc\x02\x00\x00\xfe\xfc\x00\x01\xff\x00\x04\x03\x01\xfd\x07\x01\xff\x01\x00\xfd\xfe\x00\x02\xfd\xff\x02\x02\x02\x05\x01\x00\xfd\x00\x00\x01",
+            1024: b"\x01\xff\x01\x01\x01\x03\x01\x00\xff\x00\xff\xfe\x00\x02\x04\x00\x01\xff\x00\x00\xff\x00\xff\x00\x01\xff\x02\x03\x01\x00\x00\x00\x01\xff\x00\x02\x01\xff\xff\x00\x00\x02\xfe\xff\xfb\x00\x01\x00\x00\x00\x00\x01\xff\xfe\x00\x00\x00\x01\x01\x00\x00\xff\xfe\xff\x00\xfd\x00\x00\xfe\x01\x00\x00\x00\x00\x04\x00\xfe\x00\x00\xfe\x00\xfe\x00\x02\x00\xff\x00\xfc\x00\x00\x00\x00\x01\x01\xff\x00\x00\x00\xff\x00\x02\x01\x01\x00\x00\x01\x01\x00\x00\xff\xff\x00\x02\x00\x00\x00\x00\x00\xff\x00\xff\xfe\x02\x00\x00\x01\x00\x00\x01\x00",
+            2048: b"\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\xff\x00\xff\xff\x00\x00\x00\x00\x00\x01\x00\x01\x00\xff\x00\x00\x00\x00\xff\x00\x00\x01\xff\x00\x00\xfe\x00\x00\x00\x00\x00\x00\x00\xff\x00\xff\x00\x00\x00\x01\x00\x00\x01\x00\x00\x00\xff\x00\x00\xff\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\xfe\x00\x00\x00\x00\x01\x01\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\xff\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\xff\xff\x00\x01\x00\x01\x00\x00\xff\x00\x00\x00\xff\x00\x00\xff\x00\x00\x00\x00\x00\x01\xff\x00\x00\x01\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\xff\x00\x00\x01\x00\x00\x00\x00\x00\x00\xff\x00\x02\x00\xff\x00\x00\x00\x00\x01\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x01\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\xff\x00\x00",
+        }
+        priv_gh3_kats = {
+            511: b"\x02\x03\x02\x00\x07\x00\xfe\xfd\xfb\x01\xff\x02\xfe\xfd\x00\xfd\xff\x01\x00\x01\xfe\x04\x00\x04\xff\xfe\xfb\x00\x05\x01\x04\x01\x01\x01\xff\xfc\xfa\x00\x00\xff\xfc\x00\x00\xfb\xfe\xfd\xfe\x00\xfb\x00\xfe\x00\x01\x02\x00\xfe\xfe\x02\x02\xff\x02\x00\xff\x02\xff\x00\x01\x01\x01\xff\x01\xff\x01\xff",
+            512: b"\x03\xfa\xf5\x02\x01\x01\xfa\xfd\x00\x05\xfc\x05\x00\xfd\x00\xfc\xfe\x08\x07\xfe\x05\xff\xfe\x01\x00\x06\x01\x01\x06\x01\xf9\x00\xfe\x00\x00\x03\x00\x03\xf9\xfe\x01\x03\xfe\x01\x01\xfc\x00\x03\x02\x00\x03\x00\x05\xfe\xfe\xfe\x01\xff\xfb\x01\x00\xff\xff\xfe\xfa\x01\x00\x01\xff\x03\xfc\xff\xfe\x00",
+            1024: b"\x00\x02\x01\x00\x02\xff\x00\xfd\x00\x01\x02\x01\x00\xfe\x00\xff\x02\x00\x01\xfe\xff\x03\x00\xfe\x00\x00\x00\x01\x01\x00\x01\xff\x01\x02\x01\x00\xfe\x00\x01\xff\xfd\x00\x01\x00\x01\xff\xff\xff\x00\xff\xff\x00\x00\xff\xff\xfd\x00\x01\xfd\x00\xff\x01\x00\xff\x00\x01\xff\x00\x00\x00\x04\xff\x00\xff\x01\x02\x01\x00\xff\x00\x00\xfe\x00\x00\x02\x00\x01\x00\x00\xfe\x00\x00\xff\x00\xfe\xfe\x01\x00\xff\x00\xff\x01\x02\x02\x00\x00\xff\x00\x00\x00\x00\x01\x01\x00\x00\x00\x02\x00\x01\x00\xff\x02\x00\x00\x00\x00\x00\x00\xfe\x00",
+            2048: b"\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x02\x00\x00\x00\x01\xff\x00\x00\x00\x01\x00\xff\x00\x00\x00\x00\x00\x00\xfe\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xfe\x00\x00\x00\xff\x00\x00\x00\x00\x01\x00\x00\xff\x00\x01\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\xfe\x00\x00\x00\x00\x01\x00\x00\x00\x00\xff\x00\xff\x00\x00\x00\x01\x00\x00\xff\x00\x00\xff\x00\x01\x00\x00\xff\x00\x01\x00\xff\x00\xfe\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00\x00\x00\xff\x00\x00\x00\x00\xff\x00\x01\x00\x00\x00\xff\x00\xff\x00\xff\x00\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\xff\x00\x00\x00\x00\x01\x00\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\xff\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+        }
+        pub_gh1_kats = {
+            511: [
+                0xB61824684D4B9D2A,
+                0xF09EDDAAEA9E4245,
+                0x5BD2BCD2A72DF32F,
+                0xE62BD967A767F660,
+                0x4E40C6D0F765865D,
+                0x347441D14290232A,
+                0x27C5E0BEBEB6E03E,
+                0x1307FB449EA00E28,
+            ],
+            512: [
+                0x2F451B77CFE93FC8,
+                0x5D14A7E94A6BF51B,
+                0x1B9FE8BD58C2A1E2,
+                0x924BD38EA0DE359B,
+                0xA10303D0F111864E,
+                0x1256BA1137DFC882,
+                0xCFDA5F713F7EF7A7,
+                0x3B21F906355FFDE5,
+            ],
+            1024: [
+                0x145A4FA93FF3473C,
+                0x3F4F6D848078517C,
+                0x54BD4B5260B98237,
+                0x4385BA5B5880943A,
+                0xA00D7A581ADD9491,
+                0x607B0B25E32A0767,
+                0x4FF219CF1E3B78BC,
+                0xBB57D39D048D3941,
+                0xA778914F32EA4C60,
+                0xFF150A8DBDC1FFB7,
+                0x5F6E36BE62ED8CBC,
+                0x3F847D188B6B2F1A,
+                0xFEE36E770460AB3,
+                0xACE25B28B4FA79D0,
+                0x5C48F2F5F18D3E89,
+                0x1DF39A760BFFBBE,
+            ],
+            2048: [
+                0x800E67B0BC7BFD06,
+                0x3BCE48AF8FB38F7E,
+                0xF35B04D14F8D3822,
+                0xDBD9C7AB897E9002,
+                0x9D0632BA7D6422D,
+                0xA430BF8309412C3A,
+                0x287B134C7B93EF50,
+                0xBC8750ECF09BDCD7,
+                0x466BCB717F690ADA,
+                0x994A81A2CC2DCBEE,
+                0xD02D8D4AF1B5FE87,
+                0xAB609C45D4EF5C97,
+                0xDD1654456C056FB,
+                0x7A16750215BDA5A1,
+                0xA6CB44B15A09CE1,
+                0x31CD404807D3AC3E,
+                0x310023F9FA68BEF5,
+                0x7A05048B7952E891,
+                0xB15888F8B7A441EC,
+                0xC1830CE2018AC99F,
+                0x9B9B2DAA5EE2BA5,
+                0xA17B9F5786813EAD,
+                0x9B51AC5FBA38238D,
+                0xE7CAEDF72D093B61,
+                0x718D2D4B5DF6A5DC,
+                0x15339F1E604F8B87,
+                0x8B45733C8A5D6DFB,
+                0xD62D63A17956E30C,
+                0x93A13FE8336BE9C5,
+                0x84FFD577F0611092,
+                0xA5D20C27372FFBA8,
+                0x1405C6A16C6553CD,
+            ],
+        }
+        pub_gh3_kats = {
+            511: [
+                0xE514FE7C2E1286E6,
+                0x1CE5E4A70D3A6D81,
+                0x8B9E923CBBE99B47,
+                0x709FA5200C18E198,
+                0xE2116C819AFF0BEE,
+                0x1B8387AFD644CA97,
+                0x8AFA9F58E4890E18,
+                0x397DD8A2421BC30D,
+            ],
+            512: [
+                0xC3DE1E9A0CE452EA,
+                0x2C7F834207CFA321,
+                0x51DF39B2D45A52F7,
+                0x6CE5234C0C96B630,
+                0x5D73222E4F2C034B,
+                0x904B4B9B9F5D8B54,
+                0xFDF299A7DC08F21C,
+                0x14F78A9CDE33342E,
+            ],
+            1024: [
+                0x4999F9E76365F7B8,
+                0x28FCDE7EADDB3ECF,
+                0x5E03424D4D458410,
+                0xCC3095BAAA51F010,
+                0xFD2CC5C863A9CCD1,
+                0xAF63CB97B7E9302B,
+                0xA83B97EF56EE2F7A,
+                0x6FC0D03B1C528643,
+                0x424070484C4B7E01,
+                0x26E1D849D6CB5025,
+                0xC2822ACACA0ABCDE,
+                0x72DE377972CC49DB,
+                0x70AFBE77C427E919,
+                0xA0416DC6F13B6733,
+                0x3328508D4670521F,
+                0xD2C91FFE09E4916,
+            ],
+            2048: [
+                0x486944AA1A228592,
+                0xB9FD80F9B7999A42,
+                0x494715C67F92A993,
+                0x7A91CF86DDBC9B97,
+                0x9F2A59D87C64A702,
+                0xABDD79B97F1F09FB,
+                0xA21E23BC2FC6501A,
+                0x7877755ADCCDB64E,
+                0xC1FEB8ACB842E1A7,
+                0xE607DB2A89EA6202,
+                0xB06862730B72FF4F,
+                0x25B9317E27622E98,
+                0x16704FA976AC2827,
+                0x65C2B263B28EF808,
+                0xF788659A466B500B,
+                0x6E72A5279BE5DB9F,
+                0x8229BF4AC0634C32,
+                0xDE4CD3657E339E9,
+                0x1C13A055F5421490,
+                0x8C464347B0409AC0,
+                0xB5F5CDD1AE02A855,
+                0xCD836B96F35F1F3F,
+                0x20BECDC3AF44B723,
+                0x936DB66FB4F90BC6,
+                0x3254C4B8FF7C6E12,
+                0x3AAF8AB2DA5CAE01,
+                0x792B5A7CD4BF56FA,
+                0x110FBC3CF246D6EB,
+                0xFF60123491275202,
+                0xF08D0713A53CD183,
+                0xA2EA0DFE213C3C1C,
+                0x21F1FB24E497B8BE,
+            ],
+        }
+        ctidh_f = ctidh(field_size)
+        import struct
+
+        def uint64(n):
+            return n & 0xFFFFFFFFFFFFFFFF
+
+        def test_fillrandom_hash(oldhash, outptr):
+            assert len(outptr) % 4 == 0
+            newhash = oldhash
+            for idx in range(0, len(outptr), 4):
+                newhash = uint64(
+                    (
+                        (
+                            uint64(uint64(newhash << 5) + oldhash + newhash)
+                            + (newhash >> 8)
+                        )
+                    )
+                )
+                outptr[idx : idx + 4] = struct.pack("=I", (newhash & 0xFFFFFFFF))
+            return newhash
+
+        global fillrandom_global_hash
+        fillrandom_global_hash = 0
+
+        def fillrandom_impl_global(out, context):
+            global fillrandom_global_hash
+            fillrandom_global_hash = uint64(
+                fillrandom_global_hash
+                + test_fillrandom_hash(fillrandom_global_hash, out)
+            )
+
+        fillrandom_global_hash = uint64(0x123456789ABCDEF0)
+        priv_gh1 = ctidh_f.generate_secret_key(rng=fillrandom_impl_global)
+        fillrandom_global_hash = uint64(0x123456789ABCDEF0)
+        priv_gh2 = ctidh_f.generate_secret_key(rng=fillrandom_impl_global)
+        priv_gh3 = ctidh_f.generate_secret_key(rng=fillrandom_impl_global)
+        assert bytes(priv_gh1) == bytes(priv_gh2), (bytes(priv_gh1), bytes(priv_gh2))
+        assert bytes(priv_gh1) != bytes(priv_gh3)
+        assert bytes(priv_gh1) == priv_gh1_kats[field_size]
+        assert bytes(priv_gh3) == priv_gh3_kats[field_size]
+        pub_gh1 = ctidh_f.derive_public_key(priv_gh1)
+        pub_gh3 = ctidh_f.derive_public_key(priv_gh3)
+        assert list(pub_gh1.A) == pub_gh1_kats[field_size]
+        assert list(pub_gh3.A) == pub_gh3_kats[field_size]
+
+    def test_511_withrng_kat(self):
+        self.withrng_test_kat(511)
+
+    def test_512_withrng_kat(self):
+        self.withrng_test_kat(512)
+
+    def test_1024_withrng_kat(self):
+        self.withrng_test_kat(1024)
+
+    def test_2048_withrng_kat(self):
+        self.withrng_test_kat(2048)
+
+    def test_511_withrng(self):
+        self.withrng_test(511)
+
+    def test_512_withrng(self):
+        self.withrng_test(512)
+
+    def test_1024_withrng(self):
+        self.withrng_test(1024)
+
+    def test_2048_withrng(self):
+        self.withrng_test(2048)
+
+    def withrng_test(self, fieldsize):
+        """tests csidh_private_withrng for the given *fieldsize*."""
+        ctidh_f = ctidh(fieldsize)
+        import secrets
+
+        def myrng(buf, ctx):
+            """realistic rng for real usage"""
+            buf[:] = secrets.token_bytes(len(buf))
+
+        x = ctidh_f.generate_secret_key(rng=myrng)
+        y = ctidh_f.generate_secret_key(rng=myrng)
+        assert bytes(x.e) != bytes(y.e)
+        import random
+
+        x = ctidh_f.generate_secret_key(rng=myrng)
+        y = ctidh_f.generate_secret_key(rng=myrng)
+        z = ctidh_f.private_key()
+        z.e[:] = x.e[:]
+        assert bytes(x.e) != bytes(y.e)
+        assert bytes(x.e) == bytes(z.e)
+        x.e[:] = y.e[:]
+        assert bytes(x.e) == bytes(y.e)
+        assert bytes(x.e) != bytes(z.e)
+        ctxs = {}
+
+        def clear_ctxs():
+            for ctx in list(ctxs.keys()):
+                del ctxs[ctx]
+
+        def unsafe_rng(buf, ctx):
+            """deterministic rng, not for real-world usage.
+            seeded with the pointer to the private_key byte storage."""
+            if not ctxs.get(ctx, None):
+                random.seed(ctx)
+                ctxs[ctx] = random.getstate()
+            random.setstate(ctxs[ctx])
+            buf[:] = random.randbytes(len(buf))
+            ctxs[ctx] = random.getstate()
+
+        clear_ctxs()
+        ctidh_f.generate_secret_key_inplace(x, rng=unsafe_rng)
+        ctidh_f.generate_secret_key_inplace(y, rng=unsafe_rng)
+        ctidh_f.generate_secret_key_inplace(z, rng=unsafe_rng)
+        assert bytes(x.e) != bytes(z.e)
+        z.e[:] = x.e[:]
+        x.e[:] = y.e[:]
+        assert bytes(x.e) == bytes(y.e)  # x is the old y
+        assert bytes(x.e) != bytes(z.e)  # z is the old x (which is now y)
+        clear_ctxs()
+        ctidh_f.generate_secret_key_inplace(x, rng=unsafe_rng)
+        assert bytes(x.e) != bytes(y.e)  # x is the old x, no longer y
+        assert bytes(x.e) == bytes(z.e)  # z is the old x
+        old_y = ctidh_f.private_key()
+        old_y.e[:] = y.e[:]
+        assert bytes(old_y.e) == bytes(y.e)
+        y.e[:] = z.e[:]
+        assert bytes(old_y.e) != bytes(y.e)
+        ctidh_f.generate_secret_key_inplace(y, rng=unsafe_rng)  # restore y
+        assert bytes(old_y.e) == bytes(y.e)
+        assert bytes(x.e) != bytes(y.e)  # x's ctx is diff from y's, so differs
+        shared_ctx = {"seed": 0, "ctx": None}
+
+        def unsafe_rng_shared(buf, ctx):
+            """deterministic rng, not for real-world usage.
+            seed and state are global,
+            so not useful for multithread operation without a lock."""
+            if not shared_ctx["ctx"]:
+                random.seed(shared_ctx["seed"])
+                shared_ctx["ctx"] = random.getstate()
+            random.setstate(shared_ctx["ctx"])
+            buf[:] = random.randbytes(len(buf))
+            shared_ctx["ctx"] = random.getstate()
+
+        s0_x = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        s0_y = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        assert bytes(s0_x.e) != bytes(s0_y.e)
+        shared_ctx["ctx"] = None
+        s0_x2 = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        s0_y2 = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        # check that it's deterministic with seed 0:
+        assert bytes(s0_x.e) == bytes(s0_x2.e)
+        assert bytes(s0_y.e) == bytes(s0_y2.e)
+
+        shared_ctx["ctx"] = None
+        shared_ctx["seed"] = 123
+        s123_x = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        s123_y = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        shared_ctx["ctx"] = None
+        shared_ctx["seed"] = 123
+        s123_x2 = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        s123_y2 = ctidh_f.generate_secret_key(rng=unsafe_rng_shared)
+        # check that it's determinitic with seed 123:
+        assert bytes(s123_x.e) != bytes(s123_y.e)
+        assert bytes(s123_x.e) == bytes(s123_x2.e)
+        assert bytes(s123_y.e) == bytes(s123_y2.e)
+        # deterministic, but different seed:
+        assert bytes(s123_x.e) != bytes(s0_x.e)
+        assert bytes(s123_y.e) != bytes(s0_y.e)
+
     def test_511_blinding_static_golang_vectors(self):
         ctidh511 = ctidh(511)
         alice_private_key = ctidh511.private_key_from_bytes(

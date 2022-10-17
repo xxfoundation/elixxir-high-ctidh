@@ -1,6 +1,6 @@
 [project]
 name = 'highctidh'
-version = '2022.23.08'
+version = '2022.10.17'
 description = 'ctype bindings for highctidh'
 readme = 'README.md'
 requires-python = '>=3.10.4'

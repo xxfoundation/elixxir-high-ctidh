@@ -1,3 +1,5 @@
+This Python module requires Python 3.9.2 or later.
+
 Run the unit tests:
 
     python3 -m unittest -v

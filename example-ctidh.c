@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <libhighctidh/csidh.h>
 
-void print_hex_key(void *k, int l)
+void print_hex_key(void *k, unsigned int l)
 { 
   printf("0x");
   for (unsigned int i = 0; i < l; i++)

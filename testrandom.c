@@ -51,7 +51,7 @@ void test_boundedl1_2(void)
     for (long long loop = 0;loop < table[S]*16384;++loop) {
       e[0] = loop;
       e[3] = loop;
-      random_boundedl1(e+1,2,S);
+      random_boundedl1(e+1,2,S, ctidh_fillrandom_default);
       assert(e[0] == (int8_t) loop);
       assert(e[3] == (int8_t) loop);
       assert(abs(e[1])+abs(e[2]) <= S);
@@ -103,7 +103,7 @@ void test_boundedl1_3(void)
     for (long long loop = 0;loop < table[S]*16384;++loop) {
       e[0] = loop;
       e[4] = loop;
-      random_boundedl1(e+1,3,S);
+      random_boundedl1(e+1,3,S, ctidh_fillrandom_default);
       assert(e[0] == (int8_t) loop);
       assert(e[4] == (int8_t) loop);
       assert(abs(e[1])+abs(e[2])+abs(e[3]) <= S);
@@ -231,7 +231,7 @@ void test_boundedl1_generic(void)
         
       for (long long loop = 0;loop < 16384*expoutputs;++loop) {
         int8_t e[wMAX];
-        random_boundedl1(e,w,S);
+        random_boundedl1(e,w,S, ctidh_fillrandom_default);
         crypto_declassify(e,sizeof e);
         int found = 0;
         for (long long i = 0;i < numoutputs;++i) {
