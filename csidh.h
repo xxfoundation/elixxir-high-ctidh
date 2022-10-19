@@ -45,9 +45,9 @@ extern ctidh_fillrandom ctidh_fillrandom_default;
 
 /*
  * generate a new private key using rng_callback and write the result to (priv).
- * (priv) is passed as (context) to the rng_callback.
+ * Opaque pointer from the application is passed as (context) to the rng_callback.
  */
-void csidh_private_withrng(private_key *priv, ctidh_fillrandom rng_callback);
+void csidh_private_withrng(uintptr_t context, private_key *priv, ctidh_fillrandom rng_callback);
 
 /*
  * generate a new private key and write the result to (priv).
