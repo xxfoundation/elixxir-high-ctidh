@@ -17,7 +17,7 @@ ctidh_fillrandom_default(
   randombytes(outptr, outsz);
 }
 
-void random_boundedl1(int8_t *e,const long long w,const long long S, ctidh_fillrandom rng_callback)
+void random_boundedl1(int8_t *e, const long long w,const long long S, uintptr_t rng_context, ctidh_fillrandom rng_callback)
 {
   // standard correspondences:
   // e[0],e[1],...,e[w-1] are w nonnegative integers
@@ -43,7 +43,7 @@ void random_boundedl1(int8_t *e,const long long w,const long long S, ctidh_fillr
   int32_t r[254];
 
   for (;;) { /* rejection-sampling loop */
-    rng_callback(r,4*rnum, (uintptr_t) e);
+    rng_callback(r,4*rnum, rng_context);
     for (long long j = 0;j < rnum;++j) r[j] &= ~1;
     for (long long j = 0;j < w;++j) r[j] |= 1;
     int32_sort(r,rnum);
@@ -92,7 +92,7 @@ void random_boundedl1(int8_t *e,const long long w,const long long S, ctidh_fillr
     // and, if negative, flip coin for each zero bit
     long long counter = w-S;
 
-    rng_callback(r,4*((w+31)/32), (uintptr_t) e);
+    rng_callback(r,4*((w+31)/32), rng_context);
     long long reject = 0;
     for (long long i = 0;i < w;++i) {
       int32_t rbit = 1&(r[i/32]>>(i&31));

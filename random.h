@@ -14,7 +14,7 @@ typedef void ((ctidh_fillrandom)(
 ctidh_fillrandom ctidh_fillrandom_default;
 
 // set up e[0]..e[w-1] having l1 norm at most S, assuming S<128, w<128
-void random_boundedl1(int8_t *e,long long w,long long S, ctidh_fillrandom rng_callback);
+void random_boundedl1(int8_t *e,long long w,long long S, uintptr_t rng_context, ctidh_fillrandom rng_callback);
 
 // return -1 with probability num/den, 0 with probability 1-num/den
 // assuming 0 <= num <= den, 0 < den < 2^63

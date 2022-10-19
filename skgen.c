@@ -13,7 +13,7 @@ void csidh_private_withrng(private_key *priv, ctidh_fillrandom rng_callback)
     long long w = primes_batchsize[b];
     long long S = primes_batchbound[b];
     (void) rng_callback;
-    random_boundedl1(priv->e + pos,w,S, rng_callback);
+    random_boundedl1(priv->e + pos,w,S, (uintptr_t)priv->e, rng_callback);
     pos += w;
   }
   assert(pos <= primes_num);
